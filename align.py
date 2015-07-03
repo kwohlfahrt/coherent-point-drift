@@ -107,32 +107,42 @@ def driftRigid(X, Y, w=0.9, initial_guess=None):
         yield R, t, s
 
 if __name__ == "__main__":
-    from math import sin, cos, pi
-    from numpy.random import rand, seed
-    from numpy import array
+    from math import sin, cos, pi, degrees
+    from numpy.random import rand, seed, shuffle
+    from numpy import array, empty
     from matplotlib import pyplot as plt
 
     seed(4)
 
-    pt1 = rand(12, 2)
-    plt.scatter(pt1[:, 0], pt1[:, 1], color='blue')
+    N = 12
+    drop = 2
+    D = 2
+    repeats = 20
 
-    translation = array([0.1, 0.3])
-    scale = 0.5
+    reference = rand(N, D)
+    plt.figure()
+    plt.scatter(reference[:, 0], reference[:, 1], marker='v', color='black')
 
+    colors = rand(repeats, 3)
     errors = []
 
-    for theta in frange(0, 2*pi, pi/20):
+    for i in range(repeats):
+        shuffle(reference) # To remove different points
+        theta = rand() * 2 * pi
         rotation = array([[cos(theta), -sin(theta)],
-                        [sin(theta), cos(theta)]])
-        pt2 = rotation.dot(pt1[:10].T).T * scale + translation
-        plt.scatter(pt2[:, 0], pt2[:, 1], color='red', alpha=0.5)
+                          [sin(theta), cos(theta)]])
+        scale = rand() + 0.5
+        translation = rand(2)
+        color = rand(3)
 
-        R, t, s = globalAlignment(pt1, pt2)
-        p_fitted = R.dot(pt2.T).T * s + t
-        plt.scatter(p_fitted[:, 0], p_fitted[:, 1], color='green', marker='+')
-        errors.append((theta, RMSD(pt1, p_fitted)))
+        moved = rotation.dot(reference[:N-drop].T).T * scale + translation
+        plt.scatter(moved[:, 0], moved[:, 1], marker='o', color=colors[i], alpha=0.5)
+
+        R, t, s = globalAlignment(reference, moved)
+        fitted = R.dot(moved.T).T * s + t
+        plt.scatter(fitted[:, 0], fitted[:, 1], marker='+', color='green')
+        errors.append(RMSD(reference, fitted))
 
     plt.figure()
-    plt.plot(*zip(*errors))
+    plt.scatter(range(len(errors)), errors, color=colors)
     plt.show()
