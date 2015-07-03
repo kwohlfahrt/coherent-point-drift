@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
+from math import pi
 
-def frange(start, stop, step):
-    i = start
-    while i < stop:
-        yield i
-        i += step
+class frange:
+    def __init__(self, start, stop, step):
+        self.start = start
+        self.stop = stop
+        self.step = step
+
+    def __getitem__(self, idx):
+        if not 0 <= idx < stop / step:
+            raise IndexError("Index {} out of range".format(idx))
+        return self.step * idx
+
+    def __iter__(self):
+        i = self.start
+        while i < self.stop:
+            yield i
+            i += self.step
 
 def RMSD(X, Y):
     from numpy import sqrt
@@ -21,19 +33,49 @@ def argmin(seq, key=lambda x: x):
             amin = s
     return current
 
-def globalAlignment(X, Y, w=0.9):
-    from numpy import array
+def rotationMatrix(*theta):
+    from numpy import eye, roll
+    from math import cos, sin
+
+    if len(theta) == 1:
+        theta, = theta
+        R = eye(2) * cos(theta)
+        R[1, 0] = sin(theta)
+        R[0, 1] = -sin(theta)
+    elif len(theta) == 3:
+        R = eye(3)
+        for axis, axis_theta in enumerate(theta):
+            axis_R = eye(D)
+            axis_R[1:, 1:] = rotationMatrix(axis_theta)
+            axis_R = roll(roll(axis_R, axis, 0), axis, 1)
+            R = R.dot(axis_R)
+    else:
+        raise ValueError("Only defined for D in [2..3], not {}"
+                         .format(len(theta)))
+    return R
+
+def spacedRotations(D, step):
+    from math import pi, cos, sin
+    from itertools import product as cartesian
+
+    if D == 2:
+        thetas = ((theta,) for theta in frange(0, 2*pi, step))
+    elif D == 3:
+        thetas = cartesian(frange(0, 2*pi, step), repeat=D)
+    else:
+        raise NotImplementedError("Only defined for D in [2..3], not {}"
+                                  .format(D))
+    yield from (rotationMatrix(*theta) for theta in thetas)
+
+def globalAlignment(X, Y, w=0.9, step=pi/4):
+    from numpy import zeros
     from math import pi
 
     D = X.shape[1]
-    if D != 2:
-        raise NotImplementedError("Not implemented for D != 2")
 
     error = float('inf')
-    for theta in frange(0, 2*pi, pi/4):
-        rotation = array([[cos(theta), -sin(theta)],
-                          [sin(theta), cos(theta)]])
-        estimate = driftRigid(X, Y, w, (rotation, array([0.0, 0.0]), 1.0))
+    for rotation in spacedRotations(D, step):
+        estimate = driftRigid(X, Y, w, (rotation, zeros(D), 1.0))
         for _ in range(200):
             try:
                 R, t, s = next(estimate)
@@ -44,7 +86,6 @@ def globalAlignment(X, Y, w=0.9):
             ret = R, t, s
             error = new_error
     return ret
-
 
 def driftRigid(X, Y, w=0.9, initial_guess=None):
     from numpy.linalg import svd, det
@@ -67,14 +108,14 @@ def driftRigid(X, Y, w=0.9, initial_guess=None):
     N = len(X)
     M = len(Y)
 
-    sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(X, Y).sum()
-
     if initial_guess is not None:
         R, t, s = initial_guess
     else:
         R, t, s = eye(D), zeros(D), 1.0
 
     old_exceptions = seterr(divide='raise', over='raise', under='raise')
+
+    sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(X, s * R.dot(Y.T).T + t).sum()
 
     while True:
         # E-step
@@ -103,21 +144,20 @@ def driftRigid(X, Y, w=0.9, initial_guess=None):
         t = mu_x - s * R.dot(mu_y)
         sigma_squared = 1 / (N_p * D) * (trace(X_hat.T.dot(diag(P.T.sum(axis=1))).dot(X_hat))
                                          - s * trace(A.T.dot(R)))
-
         yield R, t, s
 
 if __name__ == "__main__":
     from math import sin, cos, pi, degrees
     from numpy.random import rand, seed, shuffle
-    from numpy import array, empty
+    from numpy import array, eye
     from matplotlib import pyplot as plt
 
     seed(4)
 
     N = 12
     drop = 2
-    D = 2
-    repeats = 20
+    D = 3
+    repeats = 2
 
     reference = rand(N, D)
     plt.figure()
@@ -128,17 +168,18 @@ if __name__ == "__main__":
 
     for i in range(repeats):
         shuffle(reference) # To remove different points
-        theta = rand() * 2 * pi
-        rotation = array([[cos(theta), -sin(theta)],
-                          [sin(theta), cos(theta)]])
+        if D == 3:
+            rotation = rotationMatrix(*(rand(3) * 2 * pi))
+        elif D == 2:
+            rotation = rotationMatrix(rand() * 2 * pi)
         scale = rand() + 0.5
-        translation = rand(2)
+        translation = rand(D)
         color = rand(3)
 
         moved = rotation.dot(reference[:N-drop].T).T * scale + translation
         plt.scatter(moved[:, 0], moved[:, 1], marker='o', color=colors[i], alpha=0.5)
 
-        R, t, s = globalAlignment(reference, moved)
+        R, t, s = globalAlignment(reference, moved, w=0.9, step=pi/8)
         fitted = R.dot(moved.T).T * s + t
         plt.scatter(fitted[:, 0], fitted[:, 1], marker='+', color='green')
         errors.append(RMSD(reference, fitted))
