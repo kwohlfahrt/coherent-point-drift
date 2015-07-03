@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-from numpy import seterr
 
-from numpy import eye, zeros, array
-from numpy.linalg import svd, det
-from numpy import exp, trace, diag
-
-from math import pi
+def frange(start, stop, step):
+    i = start
+    while i < stop:
+        yield i
+        i += step
 
 def RMSD(X, Y):
     from numpy import sqrt
@@ -23,14 +22,15 @@ def argmin(seq, key=lambda x: x):
     return current
 
 def globalAlignment(X, Y, w=0.5):
-    from itertools import product as cartesian
+    from numpy import array
+    from math import pi
 
     D = X.shape[1]
     if D != 2:
         raise NotImplementedError("Not implemented for D != 2")
 
     error = float('inf')
-    for theta in range(0, 360, 45):
+    for theta in frange(0, 2*pi, pi/4):
         rotation = array([[cos(theta), -sin(theta)],
                           [sin(theta), cos(theta)]])
         estimate = driftRigid(X, Y, w, (rotation, array([0.0, 0.0]), 1.0))
@@ -47,11 +47,17 @@ def globalAlignment(X, Y, w=0.5):
 
 
 def driftRigid(X, Y, w=0.5, initial_guess=None):
+    from numpy.linalg import svd, det
+    from numpy import exp, trace, diag
+    from numpy import eye, zeros
+    from numpy import seterr
+    from math import pi
+
     if not (X.ndim == Y.ndim == 2):
         raise ValueError("Expecting 2D input data, got {}D and {}D"
                          .format(X.ndim, Y.ndim))
     if X.shape[1] != Y.shape[1]:
-        raise ValueError("Expecting points with matchin dimensionality, got {} and {}"
+        raise ValueError("Expecting points with matching dimensionality, got {} and {}"
                          .format(X.shape[1:], Y.shape[1:]))
     if not (0 <= w <= 1):
         raise ValueError("w must be in the range [0..1], got {}"
@@ -101,7 +107,7 @@ def driftRigid(X, Y, w=0.5, initial_guess=None):
         yield R, t, s
 
 if __name__ == "__main__":
-    from math import sin, cos, radians
+    from math import sin, cos, pi
     from numpy.random import rand, seed
     from numpy import array
     from matplotlib import pyplot as plt
@@ -116,21 +122,15 @@ if __name__ == "__main__":
 
     errors = []
 
-    for theta in range(0, 180, 10):
-        theta = radians(theta)
+    for theta in frange(0, 2*pi, pi/20):
         rotation = array([[cos(theta), -sin(theta)],
                         [sin(theta), cos(theta)]])
         pt2 = rotation.dot(pt1[:10].T).T * scale + translation
-        plt.scatter(pt2[:, 0], pt2[:, 1], color='red')
+        plt.scatter(pt2[:, 0], pt2[:, 1], color='red', alpha=0.5)
 
-        estimate = driftRigid(pt1, pt2, w=0.5)
-        for i in range(100):
-            try:
-                R, t, s = next(estimate)
-            except StopIteration:
-                break
+        R, t, s = globalAlignment(pt1, pt2)
         p_fitted = R.dot(pt2.T).T * s + t
-        plt.scatter(p_fitted[:, 0], p_fitted[:, 1], color='red', marker='+')
+        plt.scatter(p_fitted[:, 0], p_fitted[:, 1], color='green', marker='+')
         errors.append((theta, RMSD(pt1, p_fitted)))
 
     plt.figure()
