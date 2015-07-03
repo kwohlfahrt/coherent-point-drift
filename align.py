@@ -21,7 +21,7 @@ def argmin(seq, key=lambda x: x):
             amin = s
     return current
 
-def globalAlignment(X, Y, w=0.5):
+def globalAlignment(X, Y, w=0.9):
     from numpy import array
     from math import pi
 
@@ -34,7 +34,7 @@ def globalAlignment(X, Y, w=0.5):
         rotation = array([[cos(theta), -sin(theta)],
                           [sin(theta), cos(theta)]])
         estimate = driftRigid(X, Y, w, (rotation, array([0.0, 0.0]), 1.0))
-        for _ in range(100):
+        for _ in range(200):
             try:
                 R, t, s = next(estimate)
             except StopIteration:
@@ -46,7 +46,7 @@ def globalAlignment(X, Y, w=0.5):
     return ret
 
 
-def driftRigid(X, Y, w=0.5, initial_guess=None):
+def driftRigid(X, Y, w=0.9, initial_guess=None):
     from numpy.linalg import svd, det
     from numpy import exp, trace, diag
     from numpy import eye, zeros
