@@ -15,7 +15,38 @@ def RMSD(X, Y):
 def pairwiseDistanceSquared(X, Y):
     return ((X[None, :, :] - Y[:, None, :]) ** 2).sum(axis=2)
 
-def driftRigid(X, Y, w=0.5):
+def argmin(seq, key=lambda x: x):
+    amin = next(s)
+    for s in seq:
+        if key(s) < key(amin):
+            amin = s
+    return current
+
+def globalAlignment(X, Y, w=0.5):
+    from itertools import product as cartesian
+
+    D = X.shape[1]
+    if D != 2:
+        raise NotImplementedError("Not implemented for D != 2")
+
+    error = float('inf')
+    for theta in range(0, 360, 45):
+        rotation = array([[cos(theta), -sin(theta)],
+                          [sin(theta), cos(theta)]])
+        estimate = driftRigid(X, Y, w, (rotation, array([0.0, 0.0]), 1.0))
+        for _ in range(100):
+            try:
+                R, t, s = next(estimate)
+            except StopIteration:
+                break
+        new_error = RMSD(X, s * R.dot(Y.T).T + t)
+        if new_error < error:
+            ret = R, t, s
+            error = new_error
+    return ret
+
+
+def driftRigid(X, Y, w=0.5, initial_guess=None):
     if not (X.ndim == Y.ndim == 2):
         raise ValueError("Expecting 2D input data, got {}D and {}D"
                          .format(X.ndim, Y.ndim))
@@ -32,9 +63,10 @@ def driftRigid(X, Y, w=0.5):
 
     sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(X, Y).sum()
 
-    R = eye(D)
-    t = zeros(D)
-    s = 1.0
+    if initial_guess is not None:
+        R, t, s = initial_guess
+    else:
+        R, t, s = eye(D), zeros(D), 1.0
 
     old_exceptions = seterr(divide='raise', over='raise', under='raise')
 
