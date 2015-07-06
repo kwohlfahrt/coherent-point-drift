@@ -16,8 +16,8 @@ class frange:
             i += self.step
 
 def argmin(seq, key=lambda x: x):
-    amin = next(s)
+    amin = next(seq)
     for s in seq:
         if key(s) < key(amin):
             amin = s
-    return current
+    return amin

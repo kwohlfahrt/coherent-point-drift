@@ -3,23 +3,16 @@ from math import pi
 
 def globalAlignment(X, Y, w=0.9, step=pi/4):
     from numpy import zeros
-    from geometry import spacedRotations, RMSD
+    from geometry import spacedRotations, RMSD, rigidXform
+    from itertools import chain, islice
+    from util import argmin
 
     D = X.shape[1]
 
-    error = float('inf')
-    for rotation in spacedRotations(D, step):
-        estimate = driftRigid(X, Y, w, (rotation, zeros(D), 1.0))
-        for _ in range(200):
-            try:
-                R, t, s = next(estimate)
-            except StopIteration:
-                break
-        new_error = RMSD(X, s * R.dot(Y.T).T + t)
-        if new_error < error:
-            ret = R, t, s
-            error = new_error
-    return ret
+    estimates = (islice(driftRigid(X, Y, w, (rotation, zeros(D), 1.0)), 200)
+                 for rotation in spacedRotations(D, step))
+    return argmin(chain.from_iterable(estimates),
+                  key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
 
 def driftRigid(X, Y, w=0.9, initial_guess=None):
     from numpy.linalg import svd, det
