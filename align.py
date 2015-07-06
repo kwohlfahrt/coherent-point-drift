@@ -27,7 +27,7 @@ def driftRigid(X, Y, w=0.9, initial_guess=None):
     from numpy import eye, zeros
     from numpy import seterr
     from math import pi
-    from geometry import pairwiseDistanceSquared
+    from geometry import pairwiseDistanceSquared, rigidXform
 
     if not (X.ndim == Y.ndim == 2):
         raise ValueError("Expecting 2D input data, got {}D and {}D"
@@ -50,11 +50,11 @@ def driftRigid(X, Y, w=0.9, initial_guess=None):
 
     old_exceptions = seterr(divide='raise', over='raise', under='raise')
 
-    sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(X, s * R.dot(Y.T).T + t).sum()
+    sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(X, rigidXform(Y, R, t, s)).sum()
 
     while True:
         # E-step
-        pairwise_dist_squared = pairwiseDistanceSquared(X, s * R.dot(Y.T).T + t)
+        pairwise_dist_squared = pairwiseDistanceSquared(X, rigidXform(Y, R, t, s))
         try:
             P = (exp(-1/(2*sigma_squared) * pairwise_dist_squared)
                 / (exp(-1/(2*sigma_squared) * pairwise_dist_squared).sum(axis=0)
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     from numpy.random import rand, seed, shuffle
     from numpy import array, eye
     from matplotlib import pyplot as plt
-    from geometry import rotationMatrix, RMSD
+    from geometry import rotationMatrix, RMSD, rigidXform
 
     seed(4)
 
@@ -112,11 +112,11 @@ if __name__ == "__main__":
         translation = rand(D)
         color = rand(3)
 
-        moved = rotation.dot(reference[:N-drop].T).T * scale + translation
+        moved = rigidXform(reference[:N-drop], rotation, translation, scale)
         plt.scatter(moved[:, 0], moved[:, 1], marker='o', color=colors[i], alpha=0.5)
 
         R, t, s = globalAlignment(reference, moved, w=0.9, step=pi/8)
-        fitted = R.dot(moved.T).T * s + t
+        fitted = rigidXform(moved, R, t, s)
         plt.scatter(fitted[:, 0], fitted[:, 1], marker='+', color='green')
         errors.append(RMSD(reference, fitted))
 

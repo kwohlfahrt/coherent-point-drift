@@ -41,3 +41,6 @@ def spacedRotations(D, step):
         raise NotImplementedError("Only defined for D in [2..3], not {}"
                                   .format(D))
     yield from (rotationMatrix(*theta) for theta in thetas)
+
+def rigidXform(X, R, t, s):
+    return s * R.dot(X.T).T + t
