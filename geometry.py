@@ -1,3 +1,5 @@
+from numpy import array
+
 def RMSD(X, Y):
     from numpy import sqrt
     dist = pairwiseDistanceSquared(X, Y)
@@ -42,5 +44,5 @@ def spacedRotations(D, step):
                                   .format(D))
     yield from (rotationMatrix(*theta) for theta in thetas)
 
-def rigidXform(X, R, t, s):
+def rigidXform(X, R=array(1), t=0.0, s=1.0):
     return s * R.dot(X.T).T + t
