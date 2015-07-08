@@ -21,3 +21,7 @@ def argmin(seq, key=lambda x: x):
         if key(s) < key(amin):
             amin = s
     return amin
+
+def last(seq):
+    from functools import reduce, partial
+    return reduce(lambda acc, x: x, seq)
