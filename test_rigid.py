@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-from math import pi
-
-def tryAlignment(reference, R, t, s):
-    from geometry import rigidXform, rotationMatrix
-    from align import globalAlignment
-
-    moved = rigidXform(reference, rotationMatrix(*R), t, s)
-    return globalAlignment(reference, moved)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
-    from numpy.random import rand, seed, shuffle
+    from numpy.random import rand, seed
+    from numpy import delete
+    from random import sample
     from multiprocessing import Pool
     from itertools import repeat, starmap
+    from functools import partial
+    from math import pi
+
+    from align import globalAlignment
+    from geometry import rigidXform, rotationMatrix
 
     parser = ArgumentParser("Test random data for 2D and 3D alignment")
     parser.add_argument('N', type=int, help='Number of points')
@@ -46,17 +45,21 @@ if __name__ == '__main__':
     translations = (rand(args.repeats, args.D) * (args.translate[1] - args.translate[0])
                     + args.translate[0])
     scales = rand(args.repeats) * (args.scale[1] - args.scale[0]) + args.scale[0]
+    drops = list(map(partial(sample, k=args.drop), repeat(range(args.N), args.repeats)))
 
     with Pool() as p:
         # Pool only supports one argument for map, so use starmap + zip
-        xforms = p.starmap(tryAlignment, zip(repeat(reference), rotations, translations, scales))
+        droppeds = map(partial(delete, axis=0), repeat(reference), drops)
+        rotation_matrices = starmap(rotationMatrix, rotations)
+        moveds = map(rigidXform, droppeds, rotation_matrices, translations, scales)
+        xforms = p.starmap(globalAlignment, zip(repeat(reference), moveds))
 
     if args.pickle:
         import pickle
         from pathlib import Path
         pickle_path = Path(args.pickle)
         with pickle_path.open('wb') as f:
-            for data in (reference, xforms, rotations, translations, scales):
+            for data in (reference, drops, rotations, translations, scales, xforms):
                 pickle.dump(data, f)
 
     if args.plot:
@@ -64,8 +67,9 @@ if __name__ == '__main__':
         from geometry import rigidXform, rotationMatrix
 
         plt.scatter(reference[:, 0], reference[:, 1], marker='v', color='black')
+        droppeds = map(partial(delete, axis=0), repeat(reference), drops)
         rotation_matrices = starmap(rotationMatrix, rotations)
-        moveds = map(rigidXform, repeat(reference), rotation_matrices, translations, scales)
+        moveds = map(rigidXform, droppeds, rotation_matrices, translations, scales)
         for xform, moved in zip(xforms, moveds):
             color = rand(3)
             plt.scatter(moved[:, 0], moved[:, 1], marker='o', color=color, alpha=0.5)
