@@ -6,7 +6,7 @@ def tryAlignment(reference, R, t, s):
     from align import globalAlignment
 
     moved = rigidXform(reference, rotationMatrix(*R), t, s)
-    return globalAlignment(reference, moved, 0.9, pi/6)
+    return globalAlignment(reference, moved)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -38,10 +38,11 @@ if __name__ == '__main__':
 
     # Could generate per-process if memory is an issue
     if args.D == 2:
-        rotations = rand(args.repeats, 1)
+        rotations = rand(args.repeats, 1) * (args.rotate[1] - args.rotate[0]) + args.rotate[0]
     if args.D == 3:
-        rotations = rand(args.repeats, 3)
-    rotations = rotations * (args.rotate[1] - args.rotate[0]) + args.rotate[0]
+        angles = rand(args.repeats) * (args.rotate[1] - args.rotate[0]) + args.rotate[0]
+        axes = rand(args.repeats, 3)
+        rotations = zip(angles, axes)
     translations = (rand(args.repeats, args.D) * (args.translate[1] - args.translate[0])
                     + args.translate[0])
     scales = rand(args.repeats) * (args.scale[1] - args.scale[0]) + args.scale[0]
@@ -67,6 +68,6 @@ if __name__ == '__main__':
             moved = rigidXform(reference, rotationMatrix(*R), t, s)
             color = rand(3)
             plt.scatter(moved[:, 0], moved[:, 1], marker='o', color=color, alpha=0.5)
-            fitted =rigidXform(moved, *xform)
+            fitted = rigidXform(moved, *xform)
             plt.scatter(fitted[:, 0], fitted[:, 1], marker='+', color=color)
         plt.show()

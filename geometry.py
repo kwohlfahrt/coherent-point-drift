@@ -8,41 +8,47 @@ def RMSD(X, Y):
 def pairwiseDistanceSquared(X, Y):
     return ((X[None, :, :] - Y[:, None, :]) ** 2).sum(axis=2)
 
-def rotationMatrix(*theta):
-    from numpy import eye, roll
+def rotationMatrix(*angles):
+    from numpy import eye, array
     from math import cos, sin
 
-    if len(theta) == 1:
-        theta, = theta
+    if len(angles) == 1:
+        theta, = angles
         R = eye(2) * cos(theta)
         R[1, 0] = sin(theta)
         R[0, 1] = -sin(theta)
-    elif len(theta) == 3:
-        R = eye(3)
-        for axis, axis_theta in enumerate(theta):
-            axis_R = eye(3)
-            axis_R[1:, 1:] = rotationMatrix(axis_theta)
-            axis_R = roll(roll(axis_R, axis, 0), axis, 1)
-            R = R.dot(axis_R)
+    elif len(angles) == 2:
+        theta, (x, y, z) = angles
+        c = cos(theta)
+        s = sin(theta)
+        R = array([[c+x*x*(1-c),   x*y*(1-c)-z*s, (1-c)*x*z+y*s],
+                   [y*x*(1-c)+z*s, c+y*y*(1-c),   y*z*(1-c)-x*s],
+                   [z*x*(1-c)-y*s, z*y*(1-c)+x*s, c+z*z*(1-c)]])
     else:
-        raise ValueError("Only defined for D in [2..3], not {}"
-                         .format(len(theta)))
+        raise NotImplementedError("Only implemented for D in [2..3], not {}"
+                                  .format(len(angles)))
     return R
 
-def spacedRotations(D, step):
-    from math import pi, cos, sin
-    from itertools import product as cartesian
+def spacedRotations(D, N):
+    from math import pi, sin, cos, sqrt
+    from itertools import product as cartesian, repeat
     from util import frange
 
-
     if D == 2:
-        thetas = ((theta,) for theta in frange(0, 2*pi, step))
+        yield from map(rotationMatrix, frange(-pi, pi, 2*pi/N))
     elif D == 3:
-        thetas = cartesian(frange(0, 2*pi, step), repeat=D)
+        # Ken Shoemake
+        # Graphics Gems III, pp 124-132
+        from quaternion import Quaternion
+        for X, *theta in cartesian(frange(0, 1, 1/N), *repeat(frange(0, 2*pi, 2*pi/N), 2)):
+            R = (sqrt(1-X), sqrt(X))
+            yield rotationMatrix(*Quaternion(sin(theta[0]) * R[0], cos(theta[0]) * R[0],
+                                  sin(theta[1]) * R[1], cos(theta[1]) * R[1]).axis_angle)
     else:
         raise NotImplementedError("Only defined for D in [2..3], not {}"
                                   .format(D))
-    yield from (rotationMatrix(*theta) for theta in thetas)
+# For spaced points on a sphere, see Saff & Kuijlaars,
+# The Mathematical Intelligencer Winter 1997, Volume 19, Issue 1, pp 5-11
 
 def rigidXform(X, R=array(1), t=0.0, s=1.0):
     return s * R.dot(X.T).T + t
