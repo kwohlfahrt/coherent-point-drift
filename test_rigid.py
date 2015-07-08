@@ -55,11 +55,8 @@ if __name__ == '__main__':
         from pathlib import Path
         pickle_path = Path(args.pickle)
         with pickle_path.open('wb') as f:
-            pickle.dump(reference, f)
-            pickle.dump(xforms, f)
-            pickle.dump(rotations, f)
-            pickle.dump(translations, f)
-            pickle.dump(scales, f)
+            for data in (reference, xforms, rotations, translations, scales):
+                pickle.dump(data, f)
 
     if args.plot:
         import matplotlib.pyplot as plt
