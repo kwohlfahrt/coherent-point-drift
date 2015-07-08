@@ -12,7 +12,7 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     from numpy.random import rand, seed, shuffle
     from multiprocessing import Pool
-    from itertools import repeat
+    from itertools import repeat, starmap
 
     parser = ArgumentParser("Test random data for 2D and 3D alignment")
     parser.add_argument('N', type=int, help='Number of points')
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     if args.D == 3:
         angles = rand(args.repeats) * (args.rotate[1] - args.rotate[0]) + args.rotate[0]
         axes = rand(args.repeats, 3)
-        rotations = zip(angles, axes)
+        rotations = list(zip(angles, axes)) # Used twice, for processing and pickling
     translations = (rand(args.repeats, args.D) * (args.translate[1] - args.translate[0])
                     + args.translate[0])
     scales = rand(args.repeats) * (args.scale[1] - args.scale[0]) + args.scale[0]
@@ -64,8 +64,9 @@ if __name__ == '__main__':
         from geometry import rigidXform, rotationMatrix
 
         plt.scatter(reference[:, 0], reference[:, 1], marker='v', color='black')
-        for xform, R, t, s in zip(xforms, rotations, translations, scales):
-            moved = rigidXform(reference, rotationMatrix(*R), t, s)
+        rotation_matrices = starmap(rotationMatrix, rotations)
+        moveds = map(rigidXform, repeat(reference), rotation_matrices, translations, scales)
+        for xform, moved in zip(xforms, moveds):
             color = rand(3)
             plt.scatter(moved[:, 0], moved[:, 1], marker='o', color=color, alpha=0.5)
             fitted = rigidXform(moved, *xform)
