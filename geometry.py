@@ -3,10 +3,10 @@ from numpy import array
 def RMSD(X, Y):
     from numpy import sqrt
     dist = pairwiseDistanceSquared(X, Y)
-    return sqrt(1/dist.shape[0] * dist.min(axis=0).sum())
+    return sqrt(dist.min(axis=0).mean())
 
 def pairwiseDistanceSquared(X, Y):
-    return ((X[None, :, :] - Y[:, None, :]) ** 2).sum(axis=2)
+    return ((X[:, None, :] - Y[None, :, :]) ** 2).sum(axis=2)
 
 def rotationMatrix(*angles):
     from numpy import eye, array

@@ -39,13 +39,11 @@ def driftRigid(X, Y, w=0.9, initial_guess=None):
     else:
         R, t, s = eye(D), zeros(D), 1.0
 
+    sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(rigidXform(Y, R, t, s), X).sum()
     old_exceptions = seterr(divide='raise', over='raise', under='raise', invalid='raise')
-
-    sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(X, rigidXform(Y, R, t, s)).sum()
-
     while True:
         # E-step
-        pairwise_dist_squared = pairwiseDistanceSquared(X, rigidXform(Y, R, t, s))
+        pairwise_dist_squared = pairwiseDistanceSquared(rigidXform(Y, R, t, s), X)
         try:
             P = (exp(-1/(2*sigma_squared) * pairwise_dist_squared)
                 / (exp(-1/(2*sigma_squared) * pairwise_dist_squared).sum(axis=0)
