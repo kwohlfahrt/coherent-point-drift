@@ -4,16 +4,17 @@ class frange:
         self.stop = stop
         self.step = step
 
+    def __len__(self):
+        return int((self.stop - self.start) / self.step)
+
     def __getitem__(self, idx):
-        if not 0 <= idx < stop / step:
+        if not 0 <= idx < (self.stop - self.start) / self.step:
             raise IndexError("Index {} out of range".format(idx))
-        return self.step * idx
+        return self.start + self.step * idx
 
     def __iter__(self):
-        i = self.start
-        while i < self.stop:
-            yield i
-            i += self.step
+        for i in range(len(self)):
+            yield self[i]
 
 def last(seq):
     from functools import reduce, partial
