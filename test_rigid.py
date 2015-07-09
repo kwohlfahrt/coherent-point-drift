@@ -3,6 +3,7 @@
 if __name__ == '__main__':
     from argparse import ArgumentParser
     from numpy.random import rand, seed
+    from numpy.linalg import norm
     from numpy import delete
     from random import sample
     from multiprocessing import Pool
@@ -41,6 +42,7 @@ if __name__ == '__main__':
     if args.D == 3:
         angles = rand(args.repeats) * (args.rotate[1] - args.rotate[0]) + args.rotate[0]
         axes = rand(args.repeats, 3)
+        axes = axes / norm(axes, axis=1).reshape(-1, 1)
         rotations = list(zip(angles, axes)) # Used twice, for processing and pickling
     translations = (rand(args.repeats, args.D) * (args.translate[1] - args.translate[0])
                     + args.translate[0])
