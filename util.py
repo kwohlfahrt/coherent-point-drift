@@ -15,13 +15,6 @@ class frange:
             yield i
             i += self.step
 
-def argmin(seq, key=lambda x: x):
-    amin = next(seq)
-    for s in seq:
-        if key(s) < key(amin):
-            amin = s
-    return amin
-
 def last(seq):
     from functools import reduce, partial
     return reduce(lambda acc, x: x, seq)

@@ -4,13 +4,12 @@ def globalAlignment(X, Y, w=0.9, nsteps=12, maxiter=200):
     from numpy import zeros
     from geometry import spacedRotations, RMSD, rigidXform
     from itertools import islice
-    from util import argmin, last
+    from util import last
 
     D = X.shape[1]
     estimates = (islice(driftRigid(X, Y, w, (rotation, zeros(D), 1.0)), maxiter)
                  for rotation in spacedRotations(D, nsteps))
-    return argmin(map(last, estimates),
-                  key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
+    return min(map(last, estimates), key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
 
 def driftRigid(X, Y, w=0.9, initial_guess=None):
     from numpy.linalg import svd, det
