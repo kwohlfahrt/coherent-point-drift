@@ -7,11 +7,11 @@ def globalAlignment(X, Y, w=0.9, nsteps=12, maxiter=200):
     from util import last
 
     D = X.shape[1]
-    estimates = (islice(driftRigid(X, Y, w, (rotation, zeros(D), 1.0)), maxiter)
+    estimates = (islice(driftRigid(X, Y, w, (rotation, None, None)), maxiter)
                  for rotation in spacedRotations(D, nsteps))
     return min(map(last, estimates), key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
 
-def driftRigid(X, Y, w=0.9, initial_guess=None):
+def driftRigid(X, Y, w=0.9, initial_guess=(None, None, None)):
     from numpy.linalg import svd, det
     from numpy import exp, trace, diag
     from numpy import eye, zeros
@@ -33,10 +33,15 @@ def driftRigid(X, Y, w=0.9, initial_guess=None):
     N = len(X)
     M = len(Y)
 
-    if initial_guess is not None:
-        R, t, s = initial_guess
-    else:
-        R, t, s = eye(D), zeros(D), 1.0
+    R, t, s = initial_guess
+    if R is None:
+        R = eye(D)
+    if t is None:
+        t = X.mean(axis=0) - Y.mean(axis=0)
+    if s is None:
+        # Adding a scale estimate (below) does not help convergence.
+        # s = sqrt(var(X - X.mean(axis=0))/var(Y - Y.mean(axis=0)))
+        s = 1.0
 
     sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(rigidXform(Y, R, t, s), X).sum()
     old_exceptions = seterr(divide='ignore', over='ignore', under='ignore', invalid='raise')
