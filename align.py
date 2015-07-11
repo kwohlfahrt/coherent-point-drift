@@ -1,6 +1,6 @@
 from math import pi
 
-def globalAlignment(X, Y, w=0.9, nsteps=12, maxiter=200):
+def globalAlignment(X, Y, w=0.7, nsteps=12, maxiter=200):
     from numpy import zeros
     from geometry import spacedRotations, RMSD, rigidXform, rotationMatrix
     from itertools import islice, starmap
@@ -11,7 +11,7 @@ def globalAlignment(X, Y, w=0.9, nsteps=12, maxiter=200):
                  for rotation in starmap(rotationMatrix, spacedRotations(D, nsteps)))
     return min(map(last, estimates), key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
 
-def driftRigid(X, Y, w=0.9, initial_guess=(None, None, None)):
+def driftRigid(X, Y, w=0.7, initial_guess=(None, None, None)):
     from numpy.linalg import svd, det
     from numpy import exp, trace, diag
     from numpy import eye, zeros
