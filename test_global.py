@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 from math import pi
 
-def degrade(reference, rotation, translation, scale, drop):
+def degrade(reference, rotation, translation, scale, drop, noise):
     from numpy import delete
     from geometry import rotationMatrix, rigidXform
 
     points = delete(reference, drop, axis=0)
     rotation_matrix = rotationMatrix(*rotation)
-    return rigidXform(points, rotation_matrix, translation, scale)
+    return rigidXform(points, rotation_matrix, translation, scale) + noise
 
 def generateDegradation(args, custom_seed):
     # Only use one random number generator, so only one seed
     from numpy.random import choice, uniform, random, seed
+    from numpy import array
     from math import sqrt
     from numpy.linalg import norm
 
@@ -27,8 +28,10 @@ def generateDegradation(args, custom_seed):
     translation = uniform(*args.translate, size=args.D)
     scale = uniform(*args.scale)
     drops = choice(range(args.N), size=args.drop, replace=False)
+    noise = args.noise * random((args.N, args.D))
+    indices = chain(repeat(i, n) for i, n in enumerate())
 
-    return rotation, translation, scale, drops
+    return rotation, translation, scale, drops, noise
 
 def generate(args):
     from functools import partial
@@ -99,6 +102,9 @@ if __name__ == '__main__':
                         help='The range of translations to test')
     parser_gen.add_argument('--scale', nargs=2, type=float, default=(0.5, 1.5),
                         help='The range of scales to test')
+    parser_gen.add_argument('--noise', type=float, default=0.01,
+                            help='The amount of noise to add')
+
 
     parser_plot = subparsers.add_parser('plot', help="Plot the generated points")
     parser_plot.set_defaults(func=plot)
