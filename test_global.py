@@ -44,7 +44,7 @@ def generate(args):
     from sys import stdout
     from align import globalAlignment
 
-    seed(4)
+    seed(args.seed)
     reference= random((args.N, args.D))
     stdout.buffer.write(dumps(reference))
     seeds = randint(iinfo('int32').max, size=args.repeats)
@@ -65,7 +65,7 @@ def plot(args):
     from util import loadAll
     from geometry import rigidXform, RMSD
 
-    seed(4)
+    seed(4) # For color choice
     reference = load(stdin.buffer)
     plt.figure(0)
     plt.scatter(reference[:, 0], reference[:, 1], marker='D', color='black')
@@ -108,6 +108,8 @@ if __name__ == '__main__':
                             help='The amount of noise to add')
     parser_gen.add_argument('--duplicate', nargs=2, type=int, default=(1, 1),
                             help='The range of multiples for each point in the degraded set')
+    parser_gen.add_argument('--seed', type=int, default=4,
+                            help='The random seed for generating a degradation')
 
 
     parser_plot = subparsers.add_parser('plot', help="Plot the generated points")
