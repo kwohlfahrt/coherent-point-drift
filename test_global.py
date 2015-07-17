@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 from math import pi
 
-def degrade(reference, rotation, translation, scale, drop, noise):
+def degrade(reference, rotation, translation, scale, drop, duplications, noise):
     from numpy import delete
     from geometry import rotationMatrix, rigidXform
+    from itertools import chain, repeat
 
     points = delete(reference, drop, axis=0)
     rotation_matrix = rotationMatrix(*rotation)
-    return rigidXform(points, rotation_matrix, translation, scale) + noise
+    indices = chain.from_iterable(repeat(i, n) for i, n in enumerate(duplications))
+    return rigidXform(points, rotation_matrix, translation, scale)[list(indices)] + noise
 
 def generateDegradation(args, custom_seed):
     # Only use one random number generator, so only one seed
@@ -28,10 +30,10 @@ def generateDegradation(args, custom_seed):
     translation = uniform(*args.translate, size=args.D)
     scale = uniform(*args.scale)
     drops = choice(range(args.N), size=args.drop, replace=False)
-    noise = args.noise * random((args.N, args.D))
-    indices = chain(repeat(i, n) for i, n in enumerate())
+    duplications = choice(range(args.duplicate[0], args.duplicate[1] + 1), size=args.N - args.drop)
+    noise = args.noise * random((sum(duplications), args.D))
 
-    return rotation, translation, scale, drops, noise
+    return rotation, translation, scale, drops, duplications, noise
 
 def generate(args):
     from functools import partial
@@ -104,6 +106,8 @@ if __name__ == '__main__':
                         help='The range of scales to test')
     parser_gen.add_argument('--noise', type=float, default=0.01,
                             help='The amount of noise to add')
+    parser_gen.add_argument('--duplicate', nargs=2, type=int, default=(1, 1),
+                            help='The range of multiples for each point in the degraded set')
 
 
     parser_plot = subparsers.add_parser('plot', help="Plot the generated points")
