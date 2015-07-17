@@ -31,7 +31,6 @@ def generateDegradation(args, custom_seed):
     return rotation, translation, scale, drops
 
 def generate(args):
-    from multiprocessing import Pool
     from functools import partial
     from itertools import starmap
     from numpy.random import seed, random, randint
@@ -47,11 +46,10 @@ def generate(args):
 
     degradations = list(map(partial(generateDegradation, args), seeds))
     transformeds = starmap(partial(degrade, reference), degradations)
-    with Pool() as p:
-        # Pool only supports one argument for map, so use starmap + zip
-        fits = p.imap(partial(globalAlignment, reference), transformeds)
-        for repeat in zip(degradations, fits):
-            stdout.buffer.write(dumps(repeat))
+    # Pool only supports one argument for map, so use starmap + zip
+    fits = map(partial(globalAlignment, reference), transformeds)
+    for repeat in zip(degradations, fits):
+        stdout.buffer.write(dumps(repeat))
 
 def plot(args):
     from pickle import load

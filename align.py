@@ -1,15 +1,23 @@
 from math import pi
 
-def globalAlignment(X, Y, w=0.7, nsteps=12, maxiter=200):
-    from numpy import zeros
-    from geometry import spacedRotations, RMSD, rigidXform, rotationMatrix
-    from itertools import islice, starmap
+def tryAlignment(X, Y, w, maxiter, rotation):
     from util import last
+    from itertools import islice
+    from geometry import rotationMatrix
+
+    return last(islice(driftRigid(X, Y, w, (rotationMatrix(*rotation), None, None)), maxiter))
+
+def globalAlignment(X, Y, w=0.7, nsteps=12, maxiter=200):
+    from geometry import spacedRotations, RMSD, rigidXform
+    from functools import partial
+    from multiprocessing import Pool
 
     D = X.shape[1]
-    estimates = (islice(driftRigid(X, Y, w, (rotation, None, None)), maxiter)
-                 for rotation in starmap(rotationMatrix, spacedRotations(D, nsteps)))
-    return min(map(last, estimates), key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
+    with Pool() as p:
+        xforms = p.imap_unordered(partial(tryAlignment, X, Y, w, maxiter),
+                                  spacedRotations(D, nsteps))
+        solution = min(xforms, key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
+    return solution
 
 def driftRigid(X, Y, w=0.7, initial_guess=(None, None, None)):
     from numpy.linalg import svd, det
