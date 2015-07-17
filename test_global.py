@@ -63,7 +63,7 @@ def plot(args):
     seed(4)
     reference = load(stdin.buffer)
     plt.figure(0)
-    plt.scatter(reference[:, 0], reference[:, 1], marker='x', color='black')
+    plt.scatter(reference[:, 0], reference[:, 1], marker='D', color='black')
 
     rmsds = []
     for degradation, fit in loadAll(stdin.buffer):
@@ -74,8 +74,9 @@ def plot(args):
         fitted = rigidXform(degraded, *fit)
         plt.scatter(fitted[:, 0], fitted[:, 1], marker='+', color=color)
         rmsds.append(RMSD(reference, fitted))
-    plt.figure(1)
-    plt.violinplot(rmsds)
+    if len(rmsds) > 1:
+        plt.figure(1)
+        plt.violinplot(rmsds)
     plt.show()
 
 if __name__ == '__main__':
