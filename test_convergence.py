@@ -1,6 +1,38 @@
 #!/usr/bin/env python3
 from math import pi
 
+def degrade(reference, rotation, translation, scale, drop, duplications, noise):
+    from numpy import delete
+    from coherent_point_drift.geometry import rotationMatrix, rigidXform
+    from itertools import chain, repeat
+
+    points = delete(reference, drop, axis=0)
+    rotation_matrix = rotationMatrix(*rotation)
+    indices = chain.from_iterable(repeat(i, n) for i, n in enumerate(duplications))
+    return rigidXform(points, rotation_matrix, translation, scale)[list(indices)] + noise
+
+def generateDegradation(args, custom_seed):
+    # Only use one random number generator, so only one seed
+    from numpy.random import choice, uniform, random, seed
+    from numpy.linalg import norm
+
+    seed(custom_seed)
+
+    if args.D == 2:
+        rotation = (uniform(*args.rotate),)
+    if args.D == 3:
+        angle = uniform(*args.rotate)
+        axis = random(3)
+        axis = axis/norm(axis)
+        rotation = angle, axis
+    translation = uniform(*args.translate, size=args.D)
+    scale = uniform(*args.scale)
+    drops = choice(range(args.N), size=args.drop, replace=False)
+    duplications = choice(range(args.duplicate[0], args.duplicate[1] + 1), size=args.N - args.drop)
+    noise = args.noise * random((sum(duplications), args.D))
+
+    return rotation, translation, scale, drops, duplications, noise
+
 def process(reference, transformed):
     from coherent_point_drift.align import driftRigid
     from coherent_point_drift.geometry import rigidXform, RMSD
@@ -12,35 +44,23 @@ def process(reference, transformed):
     rmsds = map(partial(RMSD, reference), fitteds)
     return list(rmsds)
 
-def degrade(reference, rotation, translation, scale, drop):
-    from numpy import delete
-    from coherent_point_drift.geometry import rotationMatrix, rigidXform
-
-    points = delete(reference, drop, axis=0)
-    rotation_matrix = rotationMatrix(*rotation)
-    return rigidXform(points, rotation_matrix, translation, scale)
-
 def generate(args):
     from multiprocessing import Pool
     from functools import partial
-    from itertools import starmap, repeat
-    from numpy.random import seed, random, choice
-    from numpy import zeros
+    from itertools import starmap
+    from numpy.random import seed, random, randint
+    from numpy import iinfo
     from pickle import dumps
     from sys import stdout
-    from coherent_point_drift.geometry import spacedRotations
 
     seed(4)
     reference= random((args.N, args.D))
     stdout.buffer.write(dumps(reference))
+    seeds = randint(iinfo('int32').max, size=args.repeats)
 
-    rotations = spacedRotations(args.D, args.repeats)
-    translations = repeat(zeros(args.D))
-    scales = repeat(1.0)
-    drops = [choice(range(args.N), size=args.drop, replace=False) for _ in range(args.repeats)]
-    degradations = list(zip(rotations, translations, scales, drops))
-
+    degradations = list(map(partial(generateDegradation, args), seeds))
     transformeds = starmap(partial(degrade, reference), degradations)
+
     with Pool() as p:
         # Pool only supports one argument for map, so use starmap + zip
         rmsds = p.imap(partial(process, reference), transformeds)
@@ -87,6 +107,7 @@ if __name__ == '__main__':
     parser_gen.add_argument('N', type=int, help='Number of points')
     parser_gen.add_argument('D', type=int, choices=(2, 3), help='Number of dimensions')
     parser_gen.add_argument('repeats', type=int, help='Number of trials to run')
+
     parser_gen.add_argument('--drop', default=0, type=int,
                         help='number of points to exclude from the reference set')
     parser_gen.add_argument('--rotate', nargs=2, type=float, default=(-pi, pi),
@@ -95,6 +116,12 @@ if __name__ == '__main__':
                         help='The range of translations to test')
     parser_gen.add_argument('--scale', nargs=2, type=float, default=(0.5, 1.5),
                         help='The range of scales to test')
+    parser_gen.add_argument('--noise', type=float, default=0.01,
+                            help='The amount of noise to add')
+    parser_gen.add_argument('--duplicate', nargs=2, type=int, default=(1, 1),
+                            help='The range of multiples for each point in the degraded set')
+    parser_gen.add_argument('--seed', type=int, default=4,
+                            help='The random seed for generating a degradation')
 
     parser_plot = subparsers.add_parser('plot', help="Plot the genrated convergence rates")
     parser_plot.set_defaults(func=plot)

@@ -14,8 +14,6 @@ def degrade(reference, rotation, translation, scale, drop, duplications, noise):
 def generateDegradation(args, custom_seed):
     # Only use one random number generator, so only one seed
     from numpy.random import choice, uniform, random, seed
-    from numpy import array
-    from math import sqrt
     from numpy.linalg import norm
 
     seed(custom_seed)
@@ -95,9 +93,9 @@ if __name__ == '__main__':
     parser_gen.add_argument('N', type=int, help='Number of points')
     parser_gen.add_argument('D', type=int, choices=(2, 3), help='Number of dimensions')
     parser_gen.add_argument('repeats', type=int, help='Number of trials to run')
+
     parser_gen.add_argument('--drop', default=0, type=int,
                         help='number of points to exclude from the reference set')
-
     parser_gen.add_argument('--rotate', nargs=2, type=float, default=(-pi, pi),
                         help='The range of rotations to test')
     parser_gen.add_argument('--translate', nargs=2, type=float, default=(-1.0, 1.0),
@@ -110,7 +108,6 @@ if __name__ == '__main__':
                             help='The range of multiples for each point in the degraded set')
     parser_gen.add_argument('--seed', type=int, default=4,
                             help='The random seed for generating a degradation')
-
 
     parser_plot = subparsers.add_parser('plot', help="Plot the generated points")
     parser_plot.set_defaults(func=plot)
