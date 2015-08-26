@@ -32,14 +32,14 @@ def rotationMatrix(*angles):
 def spacedRotations(D, N):
     from math import pi, sin, cos, sqrt
     from itertools import product as cartesian, repeat
-    from util import frange
+    from .util import frange
 
     if D == 2:
         yield from ((theta,) for theta in frange(-pi, pi, 2*pi/N))
     elif D == 3:
         # Ken Shoemake
         # Graphics Gems III, pp 124-132
-        from quaternion import Quaternion
+        from .quaternion import Quaternion
         for X, *theta in cartesian(frange(0, 1, 1/N), *repeat(frange(0, 2*pi, 2*pi/N), 2)):
             R = (sqrt(1-X), sqrt(X))
             yield Quaternion(sin(theta[0]) * R[0], cos(theta[0]) * R[0],

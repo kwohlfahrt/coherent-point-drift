@@ -1,14 +1,14 @@
 from math import pi
 
 def tryAlignment(X, Y, w, maxiter, rotation):
-    from util import last
+    from .util import last
     from itertools import islice
-    from geometry import rotationMatrix
+    from .geometry import rotationMatrix
 
     return last(islice(driftRigid(X, Y, w, rotationMatrix(*rotation)), maxiter))
 
 def globalAlignment(X, Y, w=0.7, nsteps=12, maxiter=200):
-    from geometry import spacedRotations, RMSD, rigidXform
+    from .geometry import spacedRotations, RMSD, rigidXform
     from functools import partial
     from multiprocessing import Pool
 
@@ -26,7 +26,7 @@ def driftRigid(X, Y, w=0.7, initial_R=None):
     from numpy import eye, zeros
     from numpy import seterr
     from math import pi
-    from geometry import pairwiseDistanceSquared, rigidXform
+    from .geometry import pairwiseDistanceSquared, rigidXform
 
     if not (X.ndim == Y.ndim == 2):
         raise ValueError("Expecting 2D input data, got {}D and {}D"

@@ -3,7 +3,7 @@ from math import pi
 
 def degrade(reference, rotation, translation, scale, drop, duplications, noise):
     from numpy import delete
-    from geometry import rotationMatrix, rigidXform
+    from coherent_point_drift.geometry import rotationMatrix, rigidXform
     from itertools import chain, repeat
 
     points = delete(reference, drop, axis=0)
@@ -42,7 +42,7 @@ def generate(args):
     from numpy import iinfo
     from pickle import dumps
     from sys import stdout
-    from align import globalAlignment
+    from coherent_point_drift.align import globalAlignment
 
     seed(args.seed)
     reference= random((args.N, args.D))
@@ -62,8 +62,8 @@ def plot(args):
     import matplotlib.pyplot as plt
     from itertools import starmap
     from numpy.random import seed, random
-    from util import loadAll
-    from geometry import rigidXform, RMSD
+    from coherent_point_drift.util import loadAll
+    from coherent_point_drift.geometry import rigidXform, RMSD
 
     seed(4) # For color choice
     reference = load(stdin.buffer)
