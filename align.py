@@ -5,7 +5,7 @@ def tryAlignment(X, Y, w, maxiter, rotation):
     from itertools import islice
     from geometry import rotationMatrix
 
-    return last(islice(driftRigid(X, Y, w, (rotationMatrix(*rotation), None, None)), maxiter))
+    return last(islice(driftRigid(X, Y, w, rotationMatrix(*rotation)), maxiter))
 
 def globalAlignment(X, Y, w=0.7, nsteps=12, maxiter=200):
     from geometry import spacedRotations, RMSD, rigidXform
@@ -19,8 +19,9 @@ def globalAlignment(X, Y, w=0.7, nsteps=12, maxiter=200):
         solution = min(xforms, key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
     return solution
 
-def driftRigid(X, Y, w=0.7, initial_guess=(None, None, None)):
-    from numpy.linalg import svd, det
+# X is the reference, Y is the points
+def driftRigid(X, Y, w=0.7, initial_R=None):
+    from numpy.linalg import svd, det, norm
     from numpy import exp, trace, diag
     from numpy import eye, zeros
     from numpy import seterr
@@ -41,15 +42,17 @@ def driftRigid(X, Y, w=0.7, initial_guess=(None, None, None)):
     N = len(X)
     M = len(Y)
 
-    R, t, s = initial_guess
-    if R is None:
-        R = eye(D)
-    if t is None:
-        t = X.mean(axis=0) - Y.mean(axis=0)
-    if s is None:
-        # Adding a scale estimate (below) does not help convergence.
-        # s = sqrt(var(X - X.mean(axis=0))/var(Y - Y.mean(axis=0)))
-        s = 1.0
+    # Pre-normalize input data
+    pre_offsets = tuple(map(lambda x: -x.mean(axis=0), (X, Y)))
+    X = X + pre_offsets[0]
+    Y = Y + pre_offsets[1]
+    pre_scales = tuple(map(lambda x: 1 / abs(x).max(), (X, Y)))
+    X = X * pre_scales[0]
+    Y = Y * pre_scales[1]
+
+    R = initial_R if initial_R is not None else eye(D)
+    t = 0
+    s = 1
 
     sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(rigidXform(Y, R, t, s), X).sum()
     old_exceptions = seterr(divide='ignore', over='ignore', under='ignore', invalid='raise')
@@ -80,4 +83,9 @@ def driftRigid(X, Y, w=0.7, initial_guess=(None, None, None)):
         t = mu_x - s * R.dot(mu_y)
         sigma_squared = 1 / (N_p * D) * (trace(X_hat.T.dot(diag(P.T.sum(axis=1))).dot(X_hat))
                                          - s * trace(A.T.dot(R)))
-        yield R, t, s
+
+        # Compensate for input normalization
+        scale_out = s * pre_scales[1] / pre_scales[0]
+        translation_out = (s * pre_scales[1] * R.dot(pre_offsets[1]) / pre_scales[0]
+                           + t / pre_scales[0] - pre_offsets[0])
+        yield R, translation_out, scale_out
