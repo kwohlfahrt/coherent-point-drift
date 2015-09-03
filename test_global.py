@@ -50,7 +50,7 @@ def generate(args):
     degradations = list(map(partial(generateDegradation, args), seeds))
     transformeds = starmap(partial(degrade, reference), degradations)
     # Pool only supports one argument for map, so use starmap + zip
-    fits = map(partial(globalAlignment, reference), transformeds)
+    fits = map(partial(globalAlignment, reference, w=args.w), transformeds)
     for repeat in zip(degradations, fits):
         stdout.buffer.write(dumps(repeat))
 
@@ -108,6 +108,8 @@ if __name__ == '__main__':
                             help='The range of multiples for each point in the degraded set')
     parser_gen.add_argument('--seed', type=int, default=4,
                             help='The random seed for generating a degradation')
+    parser_gen.add_argument('-w', type=float, default=0.1,
+                            help="The 'w' parameter to the alignment function")
 
     parser_plot = subparsers.add_parser('plot', help="Plot the generated points")
     parser_plot.set_defaults(func=plot)
