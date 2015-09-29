@@ -24,6 +24,7 @@ def globalAlignment(f, X, Y, w=0.5, nsteps=12, maxiter=200):
         solution = min(xforms, key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
     return solution
 
+# X is the reference, Y is the points
 def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
     from numpy.linalg import inv
     from numpy import exp, trace, diag, std, eye
@@ -75,12 +76,9 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
                                          - trace(X_hat.T.dot(P.T).dot(Y_hat).dot(B.T)))
         yield B, t
 
-
-# X is the reference, Y is the points
 def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
     from numpy.linalg import svd, det, norm
-    from numpy import exp, trace, diag, std
-    from numpy import eye, zeros
+    from numpy import exp, trace, diag, std, eye
     from numpy import seterr
     from math import pi
     from .geometry import pairwiseDistanceSquared, rigidXform
@@ -103,9 +101,9 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
     if R is None:
         R = eye(D)
     if s is None:
-        s = std(X) / std(R.dot(Y.T).T)
+        s = std(X) / std(rigidXform(Y, R=R))
     if t is None:
-        t = X.mean(axis=0) - rigidXform(Y, R, 0, s).mean(axis=0)
+        t = X.mean(axis=0) - rigidXform(Y, R=R, s=s).mean(axis=0)
 
     sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(rigidXform(Y, R, t, s), X).sum()
     old_exceptions = seterr(divide='ignore', over='ignore', under='ignore', invalid='raise')
