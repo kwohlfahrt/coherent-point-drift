@@ -52,3 +52,6 @@ def spacedRotations(D, N):
 
 def rigidXform(X, R=array(1), t=0.0, s=1.0):
     return s * R.dot(X.T).T + t
+
+def affineXform(X, B=array(1), t=0):
+    return B.dot(X.T).T + t
