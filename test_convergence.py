@@ -77,7 +77,7 @@ if __name__ == '__main__':
     parser_gen.add_argument('D', type=int, choices=(2, 3), help='Number of dimensions')
     parser_gen.add_argument('repeats', type=int, help='Number of trials to run')
 
-    parser_gen.add_argument('--drop', default=0, type=int,
+    parser_gen.add_argument('--drop', nargs=2, type=int, default=(0, 0),
                         help='number of points to exclude from the reference set')
     parser_gen.add_argument('--rotate', nargs=2, type=float, default=(-pi, pi),
                         help='The range of rotations to test')

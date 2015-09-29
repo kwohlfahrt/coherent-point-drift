@@ -23,8 +23,12 @@ def generateDegradation(args, seed):
         rotation = angle, axis
     translation = rs.uniform(*args.translate, size=args.D)
     scale = rs.uniform(*args.scale)
-    drops = rs.choice(range(args.N), size=args.drop, replace=False)
-    duplications = rs.choice(range(args.duplicate[0], args.duplicate[1] + 1), size=args.N - args.drop)
+    if args.drop[0] == args.drop[1]:
+        ndrops = args.drop[0]
+    else:
+        ndrops = rs.randint(*sorted(args.drop))
+    drops = rs.choice(range(args.N), size=ndrops, replace=False)
+    duplications = rs.choice(range(args.duplicate[0], args.duplicate[1] + 1), size=args.N - ndrops)
     noise = args.noise * rs.randn(sum(duplications), args.D)
 
     return rotation, translation, scale, drops, duplications, noise
