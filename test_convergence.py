@@ -1,37 +1,5 @@
 #!/usr/bin/env python3
-from math import pi
-
-def degrade(reference, rotation, translation, scale, drop, duplications, noise):
-    from numpy import delete
-    from coherent_point_drift.geometry import rotationMatrix, rigidXform
-    from itertools import chain, repeat
-
-    points = delete(reference, drop, axis=0)
-    rotation_matrix = rotationMatrix(*rotation)
-    indices = chain.from_iterable(repeat(i, n) for i, n in enumerate(duplications))
-    return rigidXform(points, rotation_matrix, translation, scale)[list(indices)] + noise
-
-def generateDegradation(args, custom_seed):
-    # Only use one random number generator, so only one seed
-    from numpy.random import choice, uniform, random, seed
-    from numpy.linalg import norm
-
-    seed(custom_seed)
-
-    if args.D == 2:
-        rotation = (uniform(*args.rotate),)
-    if args.D == 3:
-        angle = uniform(*args.rotate)
-        axis = random(3)
-        axis = axis/norm(axis)
-        rotation = angle, axis
-    translation = uniform(*args.translate, size=args.D)
-    scale = uniform(*args.scale)
-    drops = choice(range(args.N), size=args.drop, replace=False)
-    duplications = choice(range(args.duplicate[0], args.duplicate[1] + 1), size=args.N - args.drop)
-    noise = args.noise * random((sum(duplications), args.D))
-
-    return rotation, translation, scale, drops, duplications, noise
+from test_util import generateDegradation, degrade
 
 def process(reference, transformed):
     from coherent_point_drift.align import driftRigid
@@ -98,6 +66,7 @@ def plot(args):
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
+    from math import pi
 
     parser = ArgumentParser("Test random data for 2D and 3D local alignment convergence")
     subparsers = parser.add_subparsers()

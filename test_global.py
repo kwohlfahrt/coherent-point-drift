@@ -1,37 +1,5 @@
 #!/usr/bin/env python3
-from math import pi
-
-def degrade(reference, rotation, translation, scale, drop, duplications, noise):
-    from numpy import delete
-    from coherent_point_drift.geometry import rotationMatrix, rigidXform
-    from itertools import chain, repeat
-
-    points = delete(reference, drop, axis=0)
-    rotation_matrix = rotationMatrix(*rotation)
-    indices = chain.from_iterable(repeat(i, n) for i, n in enumerate(duplications))
-    return rigidXform(points, rotation_matrix, translation, scale)[list(indices)] + noise
-
-def generateDegradation(args, custom_seed):
-    # Only use one random number generator, so only one seed
-    from numpy.random import choice, uniform, random, seed
-    from numpy.linalg import norm
-
-    seed(custom_seed)
-
-    if args.D == 2:
-        rotation = (uniform(*args.rotate),)
-    if args.D == 3:
-        angle = uniform(*args.rotate)
-        axis = random(3)
-        axis = axis/norm(axis)
-        rotation = angle, axis
-    translation = uniform(*args.translate, size=args.D)
-    scale = uniform(*args.scale)
-    drops = choice(range(args.N), size=args.drop, replace=False)
-    duplications = choice(range(args.duplicate[0], args.duplicate[1] + 1), size=args.N - args.drop)
-    noise = args.noise * random((sum(duplications), args.D))
-
-    return rotation, translation, scale, drops, duplications, noise
+from test_util import generateDegradation, degrade
 
 def generate(args):
     from functools import partial
@@ -49,8 +17,13 @@ def generate(args):
 
     degradations = list(map(partial(generateDegradation, args), seeds))
     transformeds = starmap(partial(degrade, reference), degradations)
-    # Pool only supports one argument for map, so use starmap + zip
-    fits = map(partial(globalAlignment, reference, w=args.w), transformeds)
+    if args.method == 'rigid':
+        from coherent_point_drift.align import driftRigid as drift
+    elif args.method == 'affine':
+        from coherent_point_drift.align import driftAffine as drift
+    else:
+        raise ValueError("Invalid method: {}".format(args.method))
+    fits = map(partial(globalAlignment, drift, reference, w=args.w), transformeds)
     for repeat in zip(degradations, fits):
         stdout.buffer.write(dumps(repeat))
 
@@ -83,6 +56,7 @@ def plot(args):
     plt.show()
 
 if __name__ == '__main__':
+    from math import pi
     from argparse import ArgumentParser
 
     parser = ArgumentParser("Test random data for 2D and 3D alignment")
@@ -108,6 +82,8 @@ if __name__ == '__main__':
                             help='The range of multiples for each point in the degraded set')
     parser_gen.add_argument('--seed', type=int, default=4,
                             help='The random seed for generating a degradation')
+    parser_gen.add_argument('--method', type=str, choices={'rigid', 'affine'}, default='rigid',
+                            help="The alignment method to use")
     parser_gen.add_argument('-w', type=float, default=0.1,
                             help="The 'w' parameter to the alignment function")
 
