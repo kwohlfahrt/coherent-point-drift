@@ -24,10 +24,28 @@ def globalAlignment(f, X, Y, w=0.5, nsteps=12, maxiter=200):
         solution = min(xforms, key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
     return solution
 
+def eStep(X, Y, w, sigma_squared):
+    from numpy import exp, std
+    from .geometry import pairwiseDistanceSquared
+
+    D = X.shape[1]
+    N = len(X)
+    M = len(Y)
+
+    dist = pairwiseDistanceSquared(Y, X)
+    overlap = exp(-dist / (2 * sigma_squared))
+
+    # The original algorithm expects unit variance, so normalize (2πς**2)**D/2 to compensate
+    # No other parts are scale-dependent
+    P = overlap / (overlap.sum(axis=0)
+                   + (2 * pi * sigma_squared) ** D / 2
+                   * w / (1-w) * M / N / std(X) ** D)
+    return P
+
 # X is the reference, Y is the points
 def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
     from numpy.linalg import inv
-    from numpy import exp, trace, diag, std, eye
+    from numpy import trace, diag, std, eye
     from numpy import seterr
     from math import pi
     from .geometry import pairwiseDistanceSquared, affineXform
@@ -45,18 +63,12 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
     if t is None:
         t = X.mean(axis=0) - affineXform(Y, B=B).mean(axis=0)
 
-    sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(affineXform(Y, B, t), X).sum()
+    sigma_squared = pairwiseDistanceSquared(affineXform(Y, B, t), X).sum() / (D * M * N)
     old_exceptions = seterr(divide='ignore', over='ignore', under='ignore', invalid='raise')
     while True:
         # E-step
-        pairwise_dist_squared = pairwiseDistanceSquared(affineXform(Y, B, t), X)
         try:
-            # The original algorithm expects unit variance, so normalize (2πς**2)**D/2 to compensate
-            # No other parts are scale-dependent
-            P = (exp(-1/(2*sigma_squared) * pairwise_dist_squared)
-                / (exp(-1/(2*sigma_squared) * pairwise_dist_squared).sum(axis=0)
-                    + (2 * pi * sigma_squared) ** (D/2)
-                    * w / (1-w) * M / N / std(X) ** D))
+            P = eStep(X, affineXform(Y, B, t), w, sigma_squared)
         except FloatingPointError:
             seterr(**old_exceptions)
             break
@@ -72,13 +84,13 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
         B = (X_hat.T.dot(P.T).dot(Y_hat)
              .dot(inv(Y_hat.T.dot(diag(P.sum(axis=1))).dot(Y_hat))))
         t = mu_x - B.dot(mu_y)
-        sigma_squared = 1 / (N_p * D) * (trace(X_hat.T.dot(diag(P.T.sum(axis=1))).dot(X_hat))
-                                         - trace(X_hat.T.dot(P.T).dot(Y_hat).dot(B.T)))
+        sigma_squared = (trace(X_hat.T.dot(diag(P.T.sum(axis=1))).dot(X_hat))
+                         - trace(X_hat.T.dot(P.T).dot(Y_hat).dot(B.T))) / (N_p * D)
         yield B, t
 
 def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
     from numpy.linalg import svd, det, norm
-    from numpy import exp, trace, diag, std, eye
+    from numpy import trace, diag, std, eye
     from numpy import seterr
     from math import pi
     from .geometry import pairwiseDistanceSquared, rigidXform
@@ -105,18 +117,12 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
     if t is None:
         t = X.mean(axis=0) - rigidXform(Y, R=R, s=s).mean(axis=0)
 
-    sigma_squared = 1 / (D*M*N) * pairwiseDistanceSquared(rigidXform(Y, R, t, s), X).sum()
+    sigma_squared = pairwiseDistanceSquared(rigidXform(Y, R, t, s), X).sum() / (D * M * N)
     old_exceptions = seterr(divide='ignore', over='ignore', under='ignore', invalid='raise')
     while True:
         # E-step
-        pairwise_dist_squared = pairwiseDistanceSquared(rigidXform(Y, R, t, s), X)
         try:
-            # The original algorithm expects unit variance, so normalize (2πς**2)**D/2 to compensate
-            # No other parts are scale-dependent
-            P = (exp(-1/(2*sigma_squared) * pairwise_dist_squared)
-                / (exp(-1/(2*sigma_squared) * pairwise_dist_squared).sum(axis=0)
-                    + (2 * pi * sigma_squared) ** (D/2)
-                    * w / (1-w) * M / N / std(X) ** D))
+            P = eStep(X, rigidXform(Y, R, t, s), w, sigma_squared)
         except FloatingPointError:
             seterr(**old_exceptions)
             break
@@ -136,6 +142,6 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
         R = U.dot(C).dot(VT)
         s = trace(A.T.dot(R)) / trace(Y_hat.T.dot(diag(P.sum(axis=1))).dot(Y_hat))
         t = mu_x - s * R.dot(mu_y)
-        sigma_squared = 1 / (N_p * D) * (trace(X_hat.T.dot(diag(P.T.sum(axis=1))).dot(X_hat))
-                                         - s * trace(A.T.dot(R)))
+        sigma_squared = (trace(X_hat.T.dot(diag(P.T.sum(axis=1))).dot(X_hat))
+                         - s * trace(A.T.dot(R))) / (N_p * D)
         yield R, t, s
