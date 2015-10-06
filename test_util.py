@@ -29,6 +29,6 @@ def generateDegradation(args, seed):
         ndrops = rs.randint(*sorted(args.drop))
     drops = rs.choice(range(args.N), size=ndrops, replace=False)
     duplications = rs.choice(range(args.duplicate[0], args.duplicate[1] + 1), size=args.N - ndrops)
-    noise = args.noise * rs.randn(sum(duplications), args.D)
+    noise = rs.uniform(*args.noise) * rs.randn(sum(duplications), args.D)
 
     return rotation, translation, scale, drops, duplications, noise

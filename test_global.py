@@ -76,7 +76,7 @@ if __name__ == '__main__':
                         help='The range of translations to test')
     parser_gen.add_argument('--scale', nargs=2, type=float, default=(0.5, 1.5),
                         help='The range of scales to test')
-    parser_gen.add_argument('--noise', type=float, default=0.01,
+    parser_gen.add_argument('--noise', nargs=2, type=float, default=(0.01, 0.01),
                             help='The amount of noise to add')
     parser_gen.add_argument('--duplicate', nargs=2, type=int, default=(1, 1),
                             help='The range of multiples for each point in the degraded set')
