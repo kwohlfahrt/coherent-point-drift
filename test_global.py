@@ -23,7 +23,7 @@ def generate(args):
         from coherent_point_drift.align import driftAffine as drift
     else:
         raise ValueError("Invalid method: {}".format(args.method))
-    fits = map(partial(globalAlignment, drift, reference, w=args.w), transformeds)
+    fits = map(partial(globalAlignment, reference, w=args.w), transformeds)
     for repeat in zip(degradations, fits):
         stdout.buffer.write(dumps(repeat))
 

@@ -1,25 +1,21 @@
 from math import pi
 
-def tryAlignment(f, X, Y, w, maxiter, rotation):
+def tryAlignment(X, Y, w, maxiter, rotation):
     from .util import last
     from itertools import islice
     from .geometry import rotationMatrix
 
-    # FIXME: Messy
-    if f is driftRigid:
-        initial_guess = rotationMatrix(*rotation), None, None
-    elif f == driftAffine:
-        initial_guess = rotationMatrix(*rotation), None
-    return last(islice(f(X, Y, w, initial_guess), maxiter))
+    initial_guess = rotationMatrix(*rotation), None, None
+    return last(islice(driftRigid(X, Y, w, initial_guess), maxiter))
 
-def globalAlignment(f, X, Y, w=0.5, nsteps=12, maxiter=200):
+def globalAlignment(X, Y, w=0.5, nsteps=12, maxiter=200):
     from .geometry import spacedRotations, RMSD, rigidXform
     from functools import partial
     from multiprocessing import Pool
 
     D = X.shape[1]
     with Pool() as p:
-        xforms = p.imap_unordered(partial(tryAlignment, f, X, Y, w, maxiter),
+        xforms = p.imap_unordered(partial(tryAlignment, X, Y, w, maxiter),
                                   spacedRotations(D, nsteps))
         solution = min(xforms, key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
     return solution
