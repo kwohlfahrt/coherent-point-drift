@@ -3,7 +3,7 @@ from numpy import array
 def RMSD(X, Y):
     from numpy import sqrt
     dist = pairwiseDistanceSquared(X, Y)
-    return sqrt(dist.min(axis=0).mean())
+    return sqrt(dist.min(axis=1).mean())
 
 def pairwiseDistanceSquared(X, Y):
     return ((X[:, None, :] - Y[None, :, :]) ** 2).sum(axis=2)
