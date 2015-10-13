@@ -37,8 +37,6 @@ def plot(args):
 
     seed(4) # For color choice
     reference = load(stdin.buffer)
-    plt.figure(0)
-    plt.scatter(reference[:, 0], reference[:, 1], marker='D', color='black')
 
     rmsds = []
     for degradation, fit in loadAll(stdin.buffer):
@@ -52,6 +50,9 @@ def plot(args):
     if len(rmsds) > 1:
         plt.figure(1)
         plt.violinplot(rmsds)
+
+    plt.figure(0)
+    plt.scatter(reference[:, 0], reference[:, 1], marker='D', color='black')
     plt.show()
 
 if __name__ == '__main__':

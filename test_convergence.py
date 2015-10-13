@@ -3,14 +3,14 @@ from test_util import generateDegradation, degrade, loadAll
 
 def process(reference, transformed):
     from coherent_point_drift.align import driftRigid
-    from coherent_point_drift.geometry import rigidXform, RMSD
-    from itertools import starmap, islice
+    from coherent_point_drift.geometry import RMSD, rigidXform
+    from itertools import islice, starmap
     from functools import partial
 
-    fits = islice(driftRigid(reference, transformed), 200)
+    fits = list(islice(driftRigid(reference, transformed), 200))
     fitteds = starmap(partial(rigidXform, transformed), fits)
-    rmsds = map(partial(RMSD, reference), fitteds)
-    return list(rmsds)
+    rmsds = list(map(partial(RMSD, reference), fitteds))
+    return fits, rmsds
 
 def generate(args):
     from multiprocessing import Pool
@@ -26,13 +26,11 @@ def generate(args):
     stdout.buffer.write(dumps(reference))
     seeds = randint(iinfo('int32').max, size=args.repeats)
 
-    degradations = list(map(partial(generateDegradation, args), seeds))
-    transformeds = starmap(partial(degrade, reference), degradations)
-
     with Pool() as p:
-        # Pool only supports one argument for map, so use starmap + zip
-        rmsds = p.imap(partial(process, reference), transformeds)
-        for repeat in zip(degradations, rmsds):
+        degradations = p.map(partial(generateDegradation, args), seeds)
+        transformeds = p.starmap(partial(degrade, reference), degradations)
+        fits = p.map(partial(process, reference), transformeds)
+        for repeat in zip(degradations, fits):
             stdout.buffer.write(dumps(repeat))
 
 def plot(args):
@@ -42,24 +40,33 @@ def plot(args):
     from itertools import starmap
     from numpy.random import seed, random
     from coherent_point_drift.geometry import rigidXform, RMSD
+    from coherent_point_drift.util import last
     from math import degrees
 
     seed(4)
     reference = load(stdin.buffer)
 
     rmsds = []
-    converged = 0
-    # This is strict :(
-    degradations, rmsds = zip(*loadAll(stdin.buffer))
-    plt.figure(0)
-    for rmsd in rmsds:
-        color = 'red' if len(rmsd) < 100 else 'blue'
-        plt.plot(rmsd, color=color, alpha=0.3)
-    rotations = map(lambda x: degrees(x[0][0]), degradations)
+    rotations = []
+    for degradation, (fit, rmsd) in loadAll(stdin.buffer):
+        rmsds.append(rmsd)
+        rotations.append(degrees(degradation[0][0]))
+
+        plt.figure(0)
+        plt.plot(rmsd, alpha=0.3)
+
+        plt.figure(1)
+        color = random(3)
+        degraded = degrade(reference, *degradation)
+        plt.scatter(degraded[:, 0], degraded[:, 1], marker='o', color=color, alpha=0.2)
+        fitted = rigidXform(degraded, *last(fit))
+        plt.scatter(fitted[:, 0], fitted[:, 1], marker='+', color=color, alpha=0.4)
+    plt.scatter(reference[:, 0], reference[:, 1], marker='v', color='black')
+
     min_rmsds= map(min, rmsds)
     rotation_rmsds = sorted(zip(rotations, min_rmsds), key=lambda x: x[0])
 
-    plt.figure(1)
+    plt.figure(2)
     plt.plot(*zip(*rotation_rmsds))
     plt.show()
 
