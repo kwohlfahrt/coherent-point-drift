@@ -34,7 +34,7 @@ def eStep(X, Y, w, sigma_squared):
     # The original algorithm expects unit variance, so normalize (2πς**2)**D/2 to compensate
     # No other parts are scale-dependent
     P = overlap / (overlap.sum(axis=0)
-                   + (2 * pi * sigma_squared) ** D / 2
+                   + (2 * pi * sigma_squared) ** (D / 2)
                    * w / (1-w) * M / N / std(X) ** D)
     return P
 
