@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from test_util import generateDegradation, degrade
+from test_util import generateDegradation, degrade, loadAll
 
 def generate(args):
     from functools import partial
@@ -33,7 +33,6 @@ def plot(args):
     import matplotlib.pyplot as plt
     from itertools import starmap
     from numpy.random import seed, random
-    from coherent_point_drift.util import loadAll
     from coherent_point_drift.geometry import rigidXform, RMSD
 
     seed(4) # For color choice

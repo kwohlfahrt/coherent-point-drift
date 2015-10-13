@@ -32,3 +32,11 @@ def generateDegradation(args, seed):
     noise = rs.uniform(*args.noise) * rs.randn(sum(duplications), args.D)
 
     return rotation, translation, scale, drops, duplications, noise
+
+def loadAll(f):
+    from pickle import load
+    while True:
+        try:
+            yield load(f)
+        except EOFError:
+            break

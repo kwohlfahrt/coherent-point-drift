@@ -19,11 +19,3 @@ class frange:
 def last(seq):
     from functools import reduce, partial
     return reduce(lambda acc, x: x, seq)
-
-def loadAll(f):
-    from pickle import load
-    while True:
-        try:
-            yield load(f)
-        except EOFError:
-            break
