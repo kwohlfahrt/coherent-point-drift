@@ -22,7 +22,7 @@ def generate(args):
     from sys import stdout
 
     seed(4)
-    reference= random((args.N, args.D))
+    reference = random((args.N, args.D))
     stdout.buffer.write(dumps(reference))
     seeds = randint(iinfo('int32').max, size=args.repeats)
 
