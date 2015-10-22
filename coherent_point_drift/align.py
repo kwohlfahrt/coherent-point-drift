@@ -21,8 +21,8 @@ def globalAlignment(X, Y, w=0.5, nsteps=12, maxiter=200):
     return solution
 
 def eStep(X, Y, w, sigma_squared):
-    from numpy import exp, std
-    from .geometry import pairwiseDistanceSquared
+    from numpy import exp
+    from .geometry import pairwiseDistanceSquared, std
 
     D = X.shape[1]
     N = len(X)
@@ -41,10 +41,10 @@ def eStep(X, Y, w, sigma_squared):
 # X is the reference, Y is the points
 def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
     from numpy.linalg import inv
-    from numpy import trace, diag, std, eye
+    from numpy import trace, diag, eye
     from numpy import seterr
     from math import pi
-    from .geometry import pairwiseDistanceSquared, affineXform
+    from .geometry import pairwiseDistanceSquared, affineXform, std
 
     D = X.shape[1]
     N = len(X)
@@ -86,10 +86,10 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
 
 def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
     from numpy.linalg import svd, det, norm
-    from numpy import trace, diag, std, eye
+    from numpy import trace, diag, eye
     from numpy import seterr
     from math import pi
-    from .geometry import pairwiseDistanceSquared, rigidXform
+    from .geometry import pairwiseDistanceSquared, rigidXform, std
 
     if not (X.ndim == Y.ndim == 2):
         raise ValueError("Expecting 2D input data, got {}D and {}D"

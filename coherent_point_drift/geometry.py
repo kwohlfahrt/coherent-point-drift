@@ -50,6 +50,10 @@ def spacedRotations(D, N):
 # For spaced points on a sphere, see Saff & Kuijlaars,
 # The Mathematical Intelligencer Winter 1997, Volume 19, Issue 1, pp 5-11
 
+def std(x):
+    from numpy import var, sqrt
+    return sqrt(var(x, axis=0).mean())
+
 def rigidXform(X, R=array(1), t=0.0, s=1.0):
     return s * R.dot(X.T).T + t
 
