@@ -8,16 +8,27 @@ def tryAlignment(X, Y, w, maxiter, rotation):
     initial_guess = rotationMatrix(*rotation), None, None
     return last(islice(driftRigid(X, Y, w, initial_guess), maxiter))
 
-def globalAlignment(X, Y, w=0.5, nsteps=12, maxiter=200):
-    from .geometry import spacedRotations, RMSD, rigidXform
+def globalAlignment(X, Y, w=0.5, nsteps=12, maxiter=200, mirror=False):
+    from .geometry import spacedRotations, RMSD, rigidXform, affineXform
     from functools import partial
+    from itertools import starmap
+    from numpy import eye
     from multiprocessing import Pool
+    from itertools import chain
 
     D = X.shape[1]
     with Pool() as p:
         xforms = p.imap_unordered(partial(tryAlignment, X, Y, w, maxiter),
                                   spacedRotations(D, nsteps))
-        solution = min(xforms, key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
+        if mirror:
+            reflection = eye(Y.shape[1])
+            reflection[0, 0] = -1
+            mirror_xforms = p.imap_unordered(partial(tryAlignment, X, affineXform(Y, reflection),
+                                                     w, maxiter), spacedRotations(D, nsteps))
+            mirror_xforms = starmap(lambda R, t, s: (R.dot(reflection), t, s), mirror_xforms)
+        else:
+            mirror_xforms = ()
+        solution = min(chain(xforms, mirror_xforms), key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
     return solution
 
 def eStep(X, Y, w, sigma_squared):
