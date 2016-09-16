@@ -39,20 +39,23 @@ def plot(args):
     reference = load(stdin.buffer)
 
     rmsds = []
+    fig, ax = plt.subplots(1, 1)
     for degradation, fit in loadAll(stdin.buffer):
-        plt.figure(0)
         color = random(3)
         degraded = degrade(reference, *degradation)
-        plt.scatter(degraded[:, 0], degraded[:, 1], marker='o', color=color, alpha=0.2)
+        ax.scatter(degraded[:, 0], degraded[:, 1], marker='o', color=color, alpha=0.2)
         fitted = rigidXform(degraded, *fit)
-        plt.scatter(fitted[:, 0], fitted[:, 1], marker='+', color=color)
+        ax.scatter(fitted[:, 0], fitted[:, 1], marker='+', color=color)
         rmsds.append(RMSD(reference, fitted))
-    if len(rmsds) > 1:
-        plt.figure(1)
-        plt.violinplot(rmsds)
+    ax.scatter(reference[:, 0], reference[:, 1], marker='D', color='black')
+    ax.set_xticks([])
+    ax.set_yticks([])
 
-    plt.figure(0)
-    plt.scatter(reference[:, 0], reference[:, 1], marker='D', color='black')
+    if len(rmsds) > 1:
+        fig, ax = plt.subplots(1, 1)
+        ax.violinplot(rmsds)
+        ax.set_ylabel("RMSD")
+
     plt.show()
 
 if __name__ == '__main__':
@@ -60,8 +63,8 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
 
     parser = ArgumentParser("Test random data for 2D and 3D alignment")
-    subparsers = parser.add_subparsers()
 
+    subparsers = parser.add_subparsers()
     parser_gen = subparsers.add_parser('generate', aliases=['gen'], help="Generate points and fits")
     parser_gen.set_defaults(func=generate)
     parser_gen.add_argument('N', type=int, help='Number of points')
