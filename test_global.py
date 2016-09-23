@@ -62,9 +62,10 @@ if __name__ == '__main__':
     from math import pi
     from argparse import ArgumentParser
 
-    parser = ArgumentParser("Test random data for 2D and 3D alignment")
+    parser = ArgumentParser(description="Test random data for 2D and 3D alignment")
 
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(dest="cmd")
+    subparsers.required = True
     parser_gen = subparsers.add_parser('generate', aliases=['gen'], help="Generate points and fits")
     parser_gen.set_defaults(func=generate)
     parser_gen.add_argument('N', type=int, help='Number of points')
