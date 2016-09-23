@@ -3,11 +3,21 @@
 A python implementation of rigid and affine coherent point drift alignment.
 Includes brute-force search for rigid alignment in global rotation space.
 
-## Installation
+# Installation
 
-The library can be installed by running `setup.py`.
+A setuptools compatible install script (`setup.py`) is provided to install the
+library. Detailed instructions can be found in the
+[official documentation][setuptools].
 
-## Demo
+## Dependencies
+
+[Python 3][python] and [Numpy][numpy].
+
+### Demo
+
+The demo script additionally requires [matplotlib][matplotlib].
+
+# Demo
 
 A demo of global alignment is included under the name `test_global.py`.
 
@@ -21,3 +31,8 @@ help about parameters can be found with `test_global.py gen --help`.
 
 The first generates and aligns a series of transformations of a random point
 cloud. The second plots their locations and RMSDs.
+
+[setuptools]: https://docs.python.org/3.3/install/#the-new-standard-distutils
+[Python]: https://python.org
+[Numpy]: https://www.numpy.org
+[matplotlib]: http://matplotlib.org
