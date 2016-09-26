@@ -1,7 +1,8 @@
 # Coherent Point Drift
 
-A python implementation of rigid and affine coherent point drift alignment.
-Includes brute-force search for rigid alignment in global rotation space.
+A python implementation of rigid and affine alignment using the
+[coherent point drift][cpd] algorithm. Includes brute-force search for rigid
+alignment in global rotation space.
 
 # Installation
 
@@ -11,15 +12,18 @@ library. Detailed instructions can be found in the
 
 ## Dependencies
 
-[Python 3][python] and [Numpy][numpy].
+[Python 3][python] and [Numpy][numpy]. Numpy is available from [PyPI][pypi] and
+can be installed as described in the [pip documentation][pip-install].
 
 ### Demo
 
-The demo script additionally requires [matplotlib][matplotlib].
+The demo script additionally requires [matplotlib][matplotlib], which is also
+available through [PyPI][pypi].
 
 # Demo
 
-A demo of global alignment is included under the name `test_global.py`.
+A demo of library use for global alignment is included under the name
+`test_global.py`.
 
 Usage is as follows:
 
@@ -36,3 +40,5 @@ cloud. The second plots their locations and RMSDs.
 [Python]: https://python.org
 [Numpy]: https://www.numpy.org
 [matplotlib]: http://matplotlib.org
+[cpd]: http://dx.doi.org/10.1109/TPAMI.2010.46
+[pypi]: https://pypi.python.org/pypi
