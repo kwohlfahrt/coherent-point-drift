@@ -9,6 +9,7 @@ def RMSD(X, Y):
     return min_rmsd / std(X)
 
 def pairwiseDistanceSquared(X, Y):
+    # R[i, j] = distance(X[i], Y[j]) ** 2
     return ((X[:, None, :] - Y[None, :, :]) ** 2).sum(axis=2)
 
 def rotationMatrix(*angles):
