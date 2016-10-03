@@ -1,15 +1,13 @@
 from math import pi
 
-def tryAlignment(X, Y, w, maxiter, rotation):
+def tryAlignment(X, Y, w, maxiter, initial_guess):
     from .util import last
     from itertools import islice
-    from .geometry import rotationMatrix
 
-    initial_guess = rotationMatrix(*rotation), None, None
     return last(islice(driftRigid(X, Y, w, initial_guess), maxiter))
 
 def globalAlignment(X, Y, w=0.5, nsteps=12, maxiter=200, mirror=False):
-    from .geometry import spacedRotations, RMSD, rigidXform, affineXform
+    from .geometry import spacedRotations, RMSD, rigidXform, affineXform, rotationMatrix
     from functools import partial
     from itertools import starmap
     from numpy import eye
@@ -19,12 +17,15 @@ def globalAlignment(X, Y, w=0.5, nsteps=12, maxiter=200, mirror=False):
     D = X.shape[1]
     with Pool() as p:
         xforms = p.imap_unordered(partial(tryAlignment, X, Y, w, maxiter),
-                                  spacedRotations(D, nsteps))
+                                  map(lambda R: (rotationMatrix(*R), None, None),
+                                      spacedRotations(D, nsteps)))
         if mirror:
             reflection = eye(Y.shape[1])
             reflection[0, 0] = -1
-            mirror_xforms = p.imap_unordered(partial(tryAlignment, X, affineXform(Y, reflection),
-                                                     w, maxiter), spacedRotations(D, nsteps))
+            Y = affineXform(Y, reflection)
+            mirror_xforms = p.imap_unordered(partial(tryAlignment, X, Y, w, maxiter),
+                                             map(lambda R: (rotationMatrix(*R), None, None),
+                                                 spacedRotations(D, nsteps)))
             mirror_xforms = starmap(lambda R, t, s: (R.dot(reflection), t, s), mirror_xforms)
         else:
             mirror_xforms = ()
