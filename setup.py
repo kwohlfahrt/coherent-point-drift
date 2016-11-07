@@ -7,4 +7,5 @@ setup(name="coherent_point_drift",
       description="A library for aliging point clouds",
       packages=['coherent_point_drift'],
       requires=['numpy (>=1.10)'],
+      entry_points={'console_scripts': ['cpd=align:main']}
 )
