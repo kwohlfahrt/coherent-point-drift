@@ -12,9 +12,15 @@ try:
 except ImportError:
     savemat = None
 
+try:
+    from scipy.io import loadmat
+except ImportError:
+    loadmat = None
+
 def loadPoints(path):
     if path.suffix == '.csv':
-        pass
+        from numpy import loadtxt
+        return loadtxt(str(path))
     elif path.suffix == '.pickle':
         with path.open('rb') as f:
             return load(f)
@@ -22,28 +28,43 @@ def loadPoints(path):
         raise ValueError("File type '{}' not recognized (need '.csv' or '.pickle')"
                          .format(path.suffix))
 
-def main(args=None):
-    from argparse import ArgumentParser
-    from sys import argv, stdout
 
-    parser = ArgumentParser(description="Align two sets of points.")
-    parser.add_argument("points", nargs=2, type=Path,
-                        help="The point sets to align (in pickle format)")
-    parser.add_argument("-w", type=float, default=0.5,
-                        help="The 'w' parameter for the CPD algorithm")
-    parser.add_argument("--mode", type=str, choices={"rigid", "affine"}, default="rigid",
-                        help="The type of drift to use.")
-    parser.add_argument("--niter", type=int, default=200,
-                        help="The number of iterations to use.")
-    parser.add_argument("--scope", type=str, choices={"global", "local"}, default="local",
-                        help="Use global alignment instead of local.")
-    output_options = {"pickle", "print"}
-    if savemat is not None:
-        output_options.add("mat")
-    parser.add_argument("--output", type=str, choices=output_options, default="print",
-                        help="Output format")
+def plot(args):
+    import matplotlib.pyplot as plt
 
-    args = parser.parse_args(argv[1:] if args is None else args)
+    points = list(map(loadPoints, args.points))
+    if args.transform.suffix == ".pickle":
+        with args.transform.open("rb") as f:
+            xform = load(f)
+    if args.transform.suffix == ".mat":
+        if loadmat is None:
+            raise RuntimeError("Loading .mat files not supported in SciPy")
+        xform = loadmat(str(args.transform))
+        if set(xform.keys()) == set("Rts"):
+            xform = xform['R'], xform['t'], xform['s']
+        if set(xform.keys()) == set("Bt"):
+            xform = xform['B'], xform['t']
+        else:
+            raise RuntimeError("Invalid transform format"
+                               "(must contain [R, t, s] or [B, t]), not {}"
+                               .format(list(xform.keys())))
+
+    if len(xform) == 2:
+        transform = affineXform
+    elif len(xform) == 3:
+        transform = rigidXform
+    else:
+        raise RuntimeError("Transform must have 2 or 3 elements, not {}"
+                           .format(len(xform)))
+
+    fig, ax = plt.subplots(1, 1)
+    ax.scatter(*points[0].T[::-1], color='red')
+    ax.scatter(*transform(points[1], *xform).T[::-1], color='blue')
+    plt.show()
+
+def align(args):
+    from sys import stdout
+
     points = list(map(loadPoints, args.points))
 
     if args.mode == "rigid":
@@ -67,6 +88,43 @@ def main(args=None):
         savemat(stdout, output)
     elif args.output == "print":
         print(*xform, sep='\n')
+
+
+def main(args=None):
+    from argparse import ArgumentParser
+    from sys import argv
+
+    parser = ArgumentParser(description="Align two sets of points.")
+    subparsers = parser.add_subparsers()
+
+    align_parser = subparsers.add_parser("align")
+    align_parser.add_argument("points", nargs=2, type=Path,
+                              help="The point sets to align (in pickle or csv format)")
+    align_parser.add_argument("-w", type=float, default=0.5,
+                              help="The 'w' parameter for the CPD algorithm")
+    align_parser.add_argument("--mode", type=str, choices={"rigid", "affine"},
+                              default="rigid", help="The type of drift to use.")
+    align_parser.add_argument("--niter", type=int, default=200,
+                              help="The number of iterations to use.")
+    align_parser.add_argument("--scope", type=str, choices={"global", "local"},
+                              default="local", help="Use global alignment instead of local.")
+    output_options = {"pickle", "print"}
+    if savemat is not None:
+        output_options.add("mat")
+        align_parser.add_argument("--output", type=str, choices=output_options,
+                                  default="print", help="Output format")
+    align_parser.set_defaults(func=align)
+
+    plot_parser = subparsers.add_parser("plot")
+    plot_parser.add_argument("points", nargs=2, type=Path,
+                             help="The points to plot (in pickle or csv format)")
+    plot_parser.add_argument("transform", type=Path,
+                             help="The transform")
+    plot_parser.set_defaults(func=plot)
+
+    args = parser.parse_args(argv[1:] if args is None else args)
+    args.func(args)
+
 
 if __name__ == "__main__":
     main()
