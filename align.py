@@ -4,6 +4,7 @@ from coherent_point_drift.align import driftRigid, driftAffine, globalAlignment
 from coherent_point_drift.geometry import rigidXform, affineXform, RMSD
 from coherent_point_drift.util import last
 from itertools import islice
+from functools import partial
 from pickle import load, dump
 from pathlib import Path
 
@@ -31,6 +32,7 @@ def loadPoints(path):
 
 def plot(args):
     import matplotlib.pyplot as plt
+    from numpy import delete
 
     points = list(map(loadPoints, args.points))
     if args.transform.suffix == ".pickle":
@@ -57,9 +59,14 @@ def plot(args):
         raise RuntimeError("Transform must have 2 or 3 elements, not {}"
                            .format(len(xform)))
 
+    if args.axes is not None:
+        points = list(map(partial(delete, obj=args.axes, axis=1),
+                          points + [transform(points[1], *xform)]))
+
     fig, ax = plt.subplots(1, 1)
     ax.scatter(*points[0].T[::-1], color='red')
-    ax.scatter(*transform(points[1], *xform).T[::-1], color='blue')
+    ax.scatter(*points[1].T[::-1], color='blue')
+    ax.scatter(*points[2].T[::-1], marker='x', color='blue')
     plt.show()
 
 def align(args):
@@ -120,6 +127,8 @@ def main(args=None):
                              help="The points to plot (in pickle or csv format)")
     plot_parser.add_argument("transform", type=Path,
                              help="The transform")
+    plot_parser.add_argument("--axes", type=int, nargs='+', default=None,
+                             help="The axes to project")
     plot_parser.set_defaults(func=plot)
 
     args = parser.parse_args(argv[1:] if args is None else args)
