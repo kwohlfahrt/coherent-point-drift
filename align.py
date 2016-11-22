@@ -85,7 +85,7 @@ def align(args):
             output = dict(zip(("R", "t", "s"), xform))
         elif args.mode == "affine":
             output = dict(zip(("B", "t"), xform))
-        savemat(stdout, output)
+        savemat(stdout.buffer, output)
     elif args.output == "print":
         print(*xform, sep='\n')
 
