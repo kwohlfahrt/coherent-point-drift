@@ -38,7 +38,7 @@ def plot(args):
     if args.transform.suffix == ".pickle":
         with args.transform.open("rb") as f:
             xform = load(f)
-    if args.transform.suffix == ".mat":
+    elif args.transform.suffix == ".mat":
         if loadmat is None:
             raise RuntimeError("Loading .mat files not supported in SciPy")
         xform = loadmat(str(args.transform))
@@ -50,6 +50,8 @@ def plot(args):
             raise RuntimeError("Invalid transform format"
                                "(must contain [R, t, s] or [B, t]), not {}"
                                .format(list(xform.keys())))
+    else:
+        raise ValueError("Invalid transform file type (need .pickle or .mat)")
 
     if len(xform) == 2:
         transform = affineXform
