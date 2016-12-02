@@ -6,7 +6,7 @@ def tryAlignment(X, Y, w, maxiter, initial_guess):
 
     return last(islice(driftRigid(X, Y, w, initial_guess), maxiter))
 
-def globalAlignment(X, Y, w=0.5, nsteps=12, maxiter=200, mirror=False, processes=None):
+def globalAlignment(X, Y, w=0.5, nsteps=7, maxiter=200, mirror=False, processes=None):
     from .geometry import spacedRotations, RMSD, rigidXform, affineXform, rotationMatrix
     from functools import partial
     from itertools import starmap
