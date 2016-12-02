@@ -78,7 +78,8 @@ def align(args):
 
     if args.mode == "rigid":
         if args.scope == "global":
-            xform = globalAlignment(*points, w=args.w, maxiter=args.niter, mirror=True)
+            xform = globalAlignment(*points, w=args.w, maxiter=args.niter, mirror=True,
+                                    processes=args.j)
         else:
             xform = last(islice(driftRigid(*points, w=args.w), args.niter))
     elif args.mode == "affine":
@@ -117,6 +118,9 @@ def main(args=None):
                               help="The number of iterations to use.")
     align_parser.add_argument("--scope", type=str, choices={"global", "local"},
                               default="local", help="Use global alignment instead of local.")
+    align_parser.add_argument("-j", type=int, default=None,
+                              help="Number of processes to launch for global search")
+
     output_options = {"pickle", "print"}
     if savemat is not None:
         output_options.add("mat")
