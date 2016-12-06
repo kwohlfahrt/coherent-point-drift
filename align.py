@@ -3,7 +3,8 @@
 from coherent_point_drift.align import driftRigid, driftAffine, globalAlignment
 from coherent_point_drift.geometry import rigidXform, affineXform, RMSD
 from coherent_point_drift.util import last
-from itertools import islice
+from itertools import islice, filterfalse
+from operator import contains
 from functools import partial
 from pickle import load, dump
 from pathlib import Path
@@ -31,8 +32,12 @@ def loadPoints(path):
 
 
 def plot(args):
-    import matplotlib.pyplot as plt
     from numpy import delete
+    import matplotlib
+
+    if args.outfile is not None:
+        matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
 
     points = list(map(loadPoints, args.points))
     if args.transform.suffix == ".pickle":
@@ -61,15 +66,19 @@ def plot(args):
         raise RuntimeError("Transform must have 2 or 3 elements, not {}"
                            .format(len(xform)))
 
-    if args.axes is not None:
-        points = list(map(partial(delete, obj=args.axes, axis=1),
-                          points + [transform(points[1], *xform)]))
+    proj_axes = tuple(filterfalse(partial(contains, args.axes), range(points[0].shape[1])))
+    points = list(map(partial(delete, obj=proj_axes, axis=1),
+                      points + [transform(points[1], *xform)]))
 
     fig, ax = plt.subplots(1, 1)
     ax.scatter(*points[0].T[::-1], color='red')
     ax.scatter(*points[1].T[::-1], color='blue')
     ax.scatter(*points[2].T[::-1], marker='x', color='blue')
-    plt.show()
+    if args.outfile is None:
+        plt.show()
+    else:
+        fig.tight_layout()
+        fig.savefig(str(args.outfile))
 
 def align(args):
     from sys import stdout
@@ -133,8 +142,10 @@ def main(args=None):
                              help="The points to plot (in pickle or csv format)")
     plot_parser.add_argument("transform", type=Path,
                              help="The transform")
-    plot_parser.add_argument("--axes", type=int, nargs='+', default=None,
-                             help="The axes to project")
+    plot_parser.add_argument("--axes", type=int, nargs=2, default=(0, 1),
+                             help="The axes to plot")
+    plot_parser.add_argument("--outfile", type=Path,
+                             help="Where to save the plot (omit to display)")
     plot_parser.set_defaults(func=plot)
 
     args = parser.parse_args(argv[1:] if args is None else args)
