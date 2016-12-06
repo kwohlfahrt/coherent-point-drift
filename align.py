@@ -31,6 +31,26 @@ def loadPoints(path):
                          .format(path.suffix))
 
 
+def loadXform(path):
+    if path.suffix == ".pickle":
+        with path.open("rb") as f:
+            return load(f)
+    elif path.suffix == ".mat":
+        if loadmat is None:
+            raise RuntimeError("Loading .mat files not supported in SciPy")
+        xform = loadmat(str(path))
+        if set(xform.keys()) == set("Rts"):
+            return xform['R'], xform['t'], xform['s']
+        if set(xform.keys()) == set("Bt"):
+            return xform['B'], xform['t']
+        else:
+            raise RuntimeError("Invalid transform format"
+                               "(must contain [R, t, s] or [B, t]), not {}"
+                               .format(list(xform.keys())))
+    else:
+        raise ValueError("Invalid transform file type (need .pickle or .mat)")
+
+
 def plot(args):
     from numpy import delete
     import matplotlib
@@ -40,31 +60,12 @@ def plot(args):
     import matplotlib.pyplot as plt
 
     points = list(map(loadPoints, args.points))
-    if args.transform.suffix == ".pickle":
-        with args.transform.open("rb") as f:
-            xform = load(f)
-    elif args.transform.suffix == ".mat":
-        if loadmat is None:
-            raise RuntimeError("Loading .mat files not supported in SciPy")
-        xform = loadmat(str(args.transform))
-        if set(xform.keys()) == set("Rts"):
-            xform = xform['R'], xform['t'], xform['s']
-        if set(xform.keys()) == set("Bt"):
-            xform = xform['B'], xform['t']
-        else:
-            raise RuntimeError("Invalid transform format"
-                               "(must contain [R, t, s] or [B, t]), not {}"
-                               .format(list(xform.keys())))
-    else:
-        raise ValueError("Invalid transform file type (need .pickle or .mat)")
+    xform = loadXform(args.transform)
 
     if len(xform) == 2:
         transform = affineXform
     elif len(xform) == 3:
         transform = rigidXform
-    else:
-        raise RuntimeError("Transform must have 2 or 3 elements, not {}"
-                           .format(len(xform)))
 
     proj_axes = tuple(filterfalse(partial(contains, args.axes), range(points[0].shape[1])))
     points = list(map(partial(delete, obj=proj_axes, axis=1),
@@ -79,6 +80,24 @@ def plot(args):
     else:
         fig.tight_layout()
         fig.savefig(str(args.outfile))
+
+
+# TODO: Test this, should be straightforward!
+def xform(args):
+    points = loadPoints(args.points)
+    xform = loadXform(args.transform)
+
+    if len(xform) == 2:
+        transformed = affineXform(points, *xform)
+    elif len(xform) == 3:
+        transformed = rigidXform(points, *xform)
+
+    if args.output == "pickle":
+        dump(transformed, stdout.buffer)
+    elif args.output == "print":
+        for point in transformed:
+            print(*point)
+
 
 def align(args):
     from sys import stdout
@@ -147,6 +166,14 @@ def main(args=None):
     plot_parser.add_argument("--outfile", type=Path,
                              help="Where to save the plot (omit to display)")
     plot_parser.set_defaults(func=plot)
+
+    xform_parser = subparsers.add_parser("transform")
+    xform_parser.add_argument("points", type=Path,
+                              help="The points to transform (in pickle or csv format)")
+    xform_parser.add_argument("transform", type=Path, help="The transform")
+    xform_parser.add_argument("--output", type=str, choices={"pickle", "print"},
+                              default="print", help="Output format")
+    xform_parser.set_defaults(func=xform)
 
     args = parser.parse_args(argv[1:] if args is None else args)
     args.func(args)
