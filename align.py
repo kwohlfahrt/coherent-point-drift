@@ -6,8 +6,11 @@ from coherent_point_drift.util import last
 from itertools import islice, filterfalse
 from operator import contains
 from functools import partial
-from pickle import load, dump
+from pickle import load, dump, HIGHEST_PROTOCOL
+dump = partial(dump, protocol=HIGHEST_PROTOCOL)
 from pathlib import Path
+from sys import stdout
+
 
 try:
     from scipy.io import savemat
@@ -19,10 +22,14 @@ try:
 except ImportError:
     loadmat = None
 
+
 def loadPoints(path):
-    if path.suffix == '.csv':
+    if path.suffix == '.txt':
         from numpy import loadtxt
         return loadtxt(str(path))
+    if path.suffix == '.csv':
+        from numpy import loadtxt
+        return loadtxt(str(path), delimiter=',')
     elif path.suffix == '.pickle':
         with path.open('rb') as f:
             return load(f)
@@ -92,16 +99,21 @@ def xform(args):
     elif len(xform) == 3:
         transformed = rigidXform(points, *xform)
 
-    if args.output == "pickle":
+    if args.format == "pickle":
         dump(transformed, stdout.buffer)
-    elif args.output == "print":
+    else:
+        import csv
+
+        if args.format == 'txt':
+            delimiter = ' '
+        elif args.format == 'csv':
+            delimiter = ','
+        writer = csv.writer(stdout, delimiter=delimiter)
         for point in transformed:
-            print(*point)
+            writer.writerow(point)
 
 
 def align(args):
-    from sys import stdout
-
     points = list(map(loadPoints, args.points))
 
     if args.mode == "rigid":
@@ -116,15 +128,15 @@ def align(args):
         else:
             xform = last(islice(driftAffine(*points, w=args.w), args.niter))
 
-    if args.output == "pickle":
+    if args.format == "pickle":
         dump(xform, stdout.buffer)
-    elif args.output == "mat":
+    elif args.format == "mat":
         if args.mode == "rigid":
             output = dict(zip(("R", "t", "s"), xform))
         elif args.mode == "affine":
             output = dict(zip(("B", "t"), xform))
         savemat(stdout.buffer, output)
-    elif args.output == "print":
+    elif args.format == "print":
         print(*xform, sep='\n')
 
 
@@ -152,8 +164,8 @@ def main(args=None):
     output_options = {"pickle", "print"}
     if savemat is not None:
         output_options.add("mat")
-        align_parser.add_argument("--output", type=str, choices=output_options,
-                                  default="print", help="Output format")
+        align_parser.add_argument("--format", type=str, choices=output_options,
+                                  default="txt", help="Output format")
     align_parser.set_defaults(func=align)
 
     plot_parser = subparsers.add_parser("plot")
@@ -171,8 +183,8 @@ def main(args=None):
     xform_parser.add_argument("points", type=Path,
                               help="The points to transform (in pickle or csv format)")
     xform_parser.add_argument("transform", type=Path, help="The transform")
-    xform_parser.add_argument("--output", type=str, choices={"pickle", "print"},
-                              default="print", help="Output format")
+    xform_parser.add_argument("--format", type=str, choices={"pickle", "txt", "csv"},
+                              default="txt", help="Output format")
     xform_parser.set_defaults(func=xform)
 
     args = parser.parse_args(argv[1:] if args is None else args)
