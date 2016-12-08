@@ -46,9 +46,9 @@ def loadXform(path):
         if loadmat is None:
             raise RuntimeError("Loading .mat files not supported in SciPy")
         xform = loadmat(str(path))
-        if set(xform.keys()) == set("Rts"):
+        if set("Rts") <= set(xform.keys()):
             return xform['R'], xform['t'], xform['s']
-        if set(xform.keys()) == set("Bt"):
+        if set("Bt") <= set(xform.keys()):
             return xform['B'], xform['t']
         else:
             raise RuntimeError("Invalid transform format"
