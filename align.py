@@ -147,9 +147,9 @@ def main(args=None):
     parser = ArgumentParser(description="Align two sets of points.")
     subparsers = parser.add_subparsers()
 
+    points_help = "The point sets to align (in pickle, csv or txt format)"
     align_parser = subparsers.add_parser("align")
-    align_parser.add_argument("points", nargs=2, type=Path,
-                              help="The point sets to align (in pickle or csv format)")
+    align_parser.add_argument("points", nargs=2, type=Path, help=points_help)
     align_parser.add_argument("-w", type=float, default=0.5,
                               help="The 'w' parameter for the CPD algorithm")
     align_parser.add_argument("--mode", type=str, choices={"rigid", "affine"},
@@ -165,12 +165,11 @@ def main(args=None):
     if savemat is not None:
         output_options.add("mat")
         align_parser.add_argument("--format", type=str, choices=output_options,
-                                  default="txt", help="Output format")
+                                  default="print", help="Output format")
     align_parser.set_defaults(func=align)
 
     plot_parser = subparsers.add_parser("plot")
-    plot_parser.add_argument("points", nargs=2, type=Path,
-                             help="The points to plot (in pickle or csv format)")
+    plot_parser.add_argument("points", nargs=2, type=Path, help=points_help)
     plot_parser.add_argument("transform", type=Path,
                              help="The transform")
     plot_parser.add_argument("--axes", type=int, nargs=2, default=(0, 1),
@@ -180,8 +179,7 @@ def main(args=None):
     plot_parser.set_defaults(func=plot)
 
     xform_parser = subparsers.add_parser("transform")
-    xform_parser.add_argument("points", type=Path,
-                              help="The points to transform (in pickle or csv format)")
+    xform_parser.add_argument("points", type=Path, points=points_help)
     xform_parser.add_argument("transform", type=Path, help="The transform")
     xform_parser.add_argument("--format", type=str, choices={"pickle", "txt", "csv"},
                               default="txt", help="Output format")
