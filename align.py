@@ -178,8 +178,8 @@ def main(args=None):
                              help="Where to save the plot (omit to display)")
     plot_parser.set_defaults(func=plot)
 
-    xform_parser = subparsers.add_parser("transform")
-    xform_parser.add_argument("points", type=Path, points=points_help)
+    xform_parser = subparsers.add_parser("transform", aliases=["xform"])
+    xform_parser.add_argument("points", type=Path, help=points_help)
     xform_parser.add_argument("transform", type=Path, help="The transform")
     xform_parser.add_argument("--format", type=str, choices={"pickle", "txt", "csv"},
                               default="txt", help="Output format")

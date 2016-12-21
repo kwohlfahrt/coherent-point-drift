@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from test_util import generateDegradation, degrade, loadAll
+from util import generateDegradation, degrade, loadAll
 
 def generate(args):
     from functools import partial
