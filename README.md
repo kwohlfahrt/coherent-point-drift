@@ -6,10 +6,10 @@ alignment in global rotation space.
 
 # Installation
 
-The main script (`align.py`) can be run from the source directory. For
-convenience, a setuptools compatible install script (`setup.py`) is provided to
-install the library. Detailed instructions can be found in
-the [official documentation][setuptools].
+The main script (`coherent_point_drift/main.py`) can be run from the source
+directory. For convenience, a setuptools compatible install script (`setup.py`)
+is provided to install the library and main script. Detailed instructions can be
+found in the [official documentation][setuptools].
 
 ## Dependencies
 
@@ -24,8 +24,9 @@ from [PyPI][pypi].
 ## Script
 
 The main script `align.py`, performs alignment searches and can also plot the
-result. Detailed instructions and lists of supported formats are available with
-the `--help` option, but general use is as follows:
+result. If using `setup.py`, it will be installed as the `cpd` exectutable.
+Detailed instructions and lists of supported formats are available with the
+`--help` option, but general use is as follows:
 
     align.py align reference.csv points.csv
     
