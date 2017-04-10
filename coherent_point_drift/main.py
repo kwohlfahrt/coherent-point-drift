@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-from coherent_point_drift.align import driftRigid, driftAffine, globalAlignment
-from coherent_point_drift.geometry import rigidXform, affineXform, RMSD
-from coherent_point_drift.util import last
+from .align import driftRigid, driftAffine, globalAlignment
+from .geometry import rigidXform, affineXform, RMSD
+from .util import last
 from itertools import islice, filterfalse
 from operator import contains
 from functools import partial

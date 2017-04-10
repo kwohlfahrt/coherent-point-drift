@@ -6,10 +6,10 @@ alignment in global rotation space.
 
 # Installation
 
-The main script (`coherent_point_drift/main.py`) can be run from the source
-directory. For convenience, a setuptools compatible install script (`setup.py`)
-is provided to install the library and main script. Detailed instructions can be
-found in the [official documentation][setuptools].
+Installing the package via `setup.py` is the recommended usage. This provides
+the executable `cpd`. Detailed instructions can be found in
+the [official documentation][setuptools]. It can also be run from the source
+directory with `python3 -m coherent_point_drift.main`.
 
 ## Dependencies
 
