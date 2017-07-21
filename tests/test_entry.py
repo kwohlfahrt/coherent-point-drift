@@ -43,3 +43,20 @@ def test_xform_inverse(tmpdir):
     assert not r.returncode
     result = loads(r.stdout)
     assert_almost_equal(expected, result)
+
+
+def test_print(tmpdir):
+    with open("tests/fixtures/ref.pickle", "rb") as f:
+        expected = load(f)
+
+    # Generate degraded points (without noise)
+    args = split("xform tests/fixtures/ref.pickle tests/fixtures/xform.pickle --format pickle")
+    r = run(cmd + args, stdout=PIPE, universal_newlines=False)
+    assert not r.returncode
+    deg = tmpdir.join("deg.pickle")
+    deg.write_binary(r.stdout)
+
+    # Generate alignment
+    args = split("align tests/fixtures/ref.pickle '{}' --format print".format(str(deg)))
+    r = run(cmd + args, stdout=PIPE, universal_newlines=False)
+    assert not r.returncode

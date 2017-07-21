@@ -58,6 +58,21 @@ def loadXform(path):
         raise ValueError("Invalid transform file type (need .pickle or .mat)")
 
 
+def saveXform(f, xform, fmt):
+    if fmt == "pickle":
+        dump(xform, f)
+    elif fmt == "mat":
+        if args.mode == "rigid":
+            output = dict(zip(("R", "t", "s"), xform))
+        elif args.mode == "affine":
+            output = dict(zip(("B", "t"), xform))
+        savemat(f, output)
+    elif fmt == "print":
+        f.writelines(map(str.encode, map(str, xform)))
+    else:
+        raise ValueError("Invalid format: {}".format(fmt))
+
+
 def plot(args):
     from numpy import delete
     import matplotlib
@@ -128,16 +143,7 @@ def align(args):
         else:
             xform = last(islice(driftAffine(*points, w=args.w), args.niter))
 
-    if args.format == "pickle":
-        dump(xform, stdout.buffer)
-    elif args.format == "mat":
-        if args.mode == "rigid":
-            output = dict(zip(("R", "t", "s"), xform))
-        elif args.mode == "affine":
-            output = dict(zip(("B", "t"), xform))
-        savemat(stdout.buffer, output)
-    elif args.format == "print":
-        print(*xform, sep='\n')
+    saveXform(stdout.buffer, xform, args.format)
 
 
 def main(args=None):
