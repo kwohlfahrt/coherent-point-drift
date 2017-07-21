@@ -4,6 +4,7 @@ from numpy.testing import assert_almost_equal
 from shlex import split
 
 import pytest
+import numpy as np
 
 cmd = ["python3", "-m" "coherent_point_drift.main"]
 

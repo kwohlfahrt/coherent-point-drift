@@ -38,6 +38,19 @@ def loadPoints(path):
                          .format(path.suffix))
 
 
+def savePoints(f, points, fmt):
+    delimiters = {'txt': ' ', 'csv': ','}
+    if fmt == "pickle":
+        dump(points, f)
+    elif fmt in delimiters:
+        delimiter = delimiters[fmt]
+        lines = map(str.encode, map(delimiter.join, map(partial(map, str), points)))
+        f.write(b'\n'.join(lines))
+        f.write(b'\n')
+    else:
+        raise ValueError("Invalid format: {}".format(fmt))
+
+
 def loadXform(path):
     if path.suffix == ".pickle":
         with path.open("rb") as f:
@@ -114,18 +127,7 @@ def xform(args):
     elif len(xform) == 3:
         transformed = rigidXform(points, *xform)
 
-    if args.format == "pickle":
-        dump(transformed, stdout.buffer)
-    else:
-        import csv
-
-        if args.format == 'txt':
-            delimiter = ' '
-        elif args.format == 'csv':
-            delimiter = ','
-        writer = csv.writer(stdout, delimiter=delimiter)
-        for point in transformed:
-            writer.writerow(point)
+    savePoints(stdout.buffer, transformed, args.format)
 
 
 def align(args):
