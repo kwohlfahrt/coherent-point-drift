@@ -3,19 +3,17 @@ from coherent_point_drift.least_squares import *
 from coherent_point_drift.geometry import rigidXform, randomRotations, rotationMatrix
 from coherent_point_drift.util import last
 from itertools import islice
-import random
 
 def test_least_squares():
-    np.random.seed(4)
-    random.seed(6)
+    rng = np.random.RandomState(4)
 
     ndim = 3
 
-    R = rotationMatrix(*next(randomRotations(ndim)))
-    t = np.random.normal(size=ndim)
-    s = np.random.normal(size=1)[0]
+    R = rotationMatrix(*next(randomRotations(ndim, rng)))
+    t = rng.normal(size=ndim)
+    s = rng.lognormal(size=1)[0]
 
-    X = np.random.normal(size=(10, ndim))
+    X = rng.normal(size=(10, ndim))
     Y = rigidXform(X, R, t, s)
 
     alignment = align(X, Y)
@@ -28,16 +26,15 @@ def test_least_squares():
 
 def test_cpd_prior():
     from coherent_point_drift.align import driftRigid
-    np.random.seed(4)
-    random.seed(6)
+    rng = np.random.RandomState(4)
 
     ndim = 3
 
-    R = rotationMatrix(*next(randomRotations(ndim)))
-    t = np.random.normal(size=ndim)
-    s = np.random.normal(size=1)[0]
+    R = rotationMatrix(*next(randomRotations(ndim, rng)))
+    t = rng.normal(size=ndim)
+    s = rng.normal(size=1)[0]
 
-    X = np.random.normal(size=(10, ndim))
+    X = rng.normal(size=(10, ndim))
     Y = rigidXform(X, R, t, s)
 
     cpd = last(islice(driftRigid(X, Y, w=np.eye(len(X))), 200))

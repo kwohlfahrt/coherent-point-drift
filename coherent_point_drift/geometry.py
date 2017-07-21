@@ -54,22 +54,25 @@ def spacedRotations(D, N):
 # For spaced points on a sphere, see Saff & Kuijlaars,
 # The Mathematical Intelligencer Winter 1997, Volume 19, Issue 1, pp 5-11
 
-def randomRotations(D):
+def randomRotations(D, rng=None):
     from math import pi, sin, cos, sqrt
-    from random import uniform
+    from numpy.random import RandomState
     from itertools import product as cartesian, repeat
     from .util import frange
 
+    if not isinstance(rng, RandomState):
+        rng = RandomState(rng)
+
     if D == 2:
         while True:
-            yield (uniform(-pi, pi),)
+            yield (rng.uniform(-pi, pi),)
     elif D == 3:
         # Ken Shoemake
         # Graphics Gems III, pp 124-132
         from .quaternion import Quaternion
         while True:
-            X = uniform(0, 1)
-            theta = uniform(0, 2*pi), uniform(0, 2*pi)
+            X = rng.uniform(0, 1)
+            theta = rng.uniform(0, 2*pi), rng.uniform(0, 2*pi)
             R = (sqrt(1-X), sqrt(X))
             yield Quaternion(sin(theta[0]) * R[0], cos(theta[0]) * R[0],
                              sin(theta[1]) * R[1], cos(theta[1]) * R[1]).axis_angle
