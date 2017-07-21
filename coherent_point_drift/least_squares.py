@@ -1,4 +1,9 @@
-def align(X, Y):
+from .geometry import rigidXform
+
+def score(X, Y):
+    return ((X - Y) ** 2).sum()
+
+def align(X, Y, mirror=False):
     import numpy as np
     import numpy.linalg as la
 
@@ -21,4 +26,11 @@ def align(X, Y):
     R = U.dot(S).dot(VT)
     s = 1 / ss_y * np.trace(np.diag(D).dot(S))
     t = mu_x - s * R.dot(mu_y)
-    return R, t, s
+    xform = R, t, s
+    if mirror:
+        ndim = Y.shape[-1]
+        mirrored = np.array([[1] * (Y.shape[-1] - 1) + [-1]]) * Y
+        R, t, s = align(X, mirrored, mirror=False)
+        R[-1, -1] *= -1
+        xform = min(xform, (R, t, s), key=lambda x: score(X, rigidXform(Y, *x)))
+    return xform

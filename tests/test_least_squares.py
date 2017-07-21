@@ -43,3 +43,11 @@ def test_cpd_prior():
     cpd = last(islice(driftRigid(X, Y, w=np.eye(len(X))), 200))
     for params in zip(align(X, Y), cpd):
         np.testing.assert_almost_equal(*params)
+
+
+def test_mirror():
+    from coherent_point_drift.align import driftRigid
+    # L-shape
+    X = np.array([[1, 0], [0, 0], [0, 1], [0, 2], [0, 3]])
+    Y = X * np.array([[-1, 1]])
+    np.testing.assert_almost_equal(rigidXform(Y, *align(X, Y, mirror=True)), X)
