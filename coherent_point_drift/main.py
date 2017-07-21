@@ -75,13 +75,22 @@ def saveXform(f, xform, fmt):
     if fmt == "pickle":
         dump(xform, f)
     elif fmt == "mat":
-        if args.mode == "rigid":
-            output = dict(zip(("R", "t", "s"), xform))
-        elif args.mode == "affine":
-            output = dict(zip(("B", "t"), xform))
-        savemat(f, output)
+        if len(xform) == 3:
+            labels = "R", "t", "s"
+        elif len(xform) == 2:
+            labels = "B", "t"
+        else:
+            raise ValueError("Invalid xform")
+        savemat(f, dict(zip(labels, xform)))
     elif fmt == "print":
-        f.writelines(map(str.encode, map(str, xform)))
+        lines = map(str.encode, map(' '.join, map(partial(map, str), xform[0])))
+        f.write(b'\n'.join(lines))
+        f.write(b'\n\n')
+        f.write(' '.join(map(str, xform[1])).encode())
+        f.write(b'\n\n')
+        if len(xform) > 2:
+            f.write(str(xform[2]).encode())
+        f.write(b'\n')
     else:
         raise ValueError("Invalid format: {}".format(fmt))
 
