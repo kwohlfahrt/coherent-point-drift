@@ -53,7 +53,7 @@ def eStep(X, Y, prior, sigma_squared):
 # X is the reference, Y is the points
 def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
     from numpy.linalg import inv
-    from numpy import trace, diag, eye, full
+    from numpy import trace, eye, full
     from numpy import seterr
     from math import pi
     from .geometry import pairwiseDistanceSquared, affineXform, std
@@ -94,15 +94,15 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
 
         #This part is different to driftRigid
         B = (X_hat.T.dot(P.T).dot(Y_hat)
-             .dot(inv(Y_hat.T.dot(diag(P.sum(axis=1))).dot(Y_hat))))
+             .dot(inv((Y_hat.T *  P.sum(axis=1, keepdims=True).T).dot(Y_hat))))
         t = mu_x - B.dot(mu_y)
-        sigma_squared = (trace(X_hat.T.dot(diag(P.T.sum(axis=1))).dot(X_hat))
+        sigma_squared = (trace((X_hat.T * P.sum(axis=0, keepdims=True)).dot(X_hat))
                          - trace(X_hat.T.dot(P.T).dot(Y_hat).dot(B.T))) / (N_p * D)
         yield B, t
 
 def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
     from numpy.linalg import svd, det, norm
-    from numpy import trace, diag, eye, full, asarray
+    from numpy import trace, eye, full, asarray
     from numpy import seterr
     from math import pi
     from .geometry import pairwiseDistanceSquared, rigidXform, std
@@ -156,8 +156,8 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
         C = eye(D)
         C[-1, -1] = det(U.dot(VT))
         R = U.dot(C).dot(VT)
-        s = trace(A.T.dot(R)) / trace(Y_hat.T.dot(diag(P.sum(axis=1))).dot(Y_hat))
+        s = trace(A.T.dot(R)) / trace((Y_hat.T * P.sum(axis=1, keepdims=True).T).dot(Y_hat))
         t = mu_x - s * R.dot(mu_y)
-        sigma_squared = (trace(X_hat.T.dot(diag(P.T.sum(axis=1))).dot(X_hat))
+        sigma_squared = (trace((X_hat.T * P.sum(axis=0, keepdims=True)).dot(X_hat))
                          - s * trace(A.T.dot(R))) / (N_p * D)
         yield R, t, s
