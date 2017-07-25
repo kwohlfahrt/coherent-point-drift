@@ -61,3 +61,29 @@ def test_print(tmpdir):
     args = split("align tests/fixtures/ref.pickle '{}' --format print".format(str(deg)))
     r = run(cmd + args, stdout=PIPE, universal_newlines=False)
     assert not r.returncode
+
+def test_align_multiple():
+    args = split(
+        "align tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
+        "tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
+        "-w {w} --format pickle".format(w=1/3)
+    )
+    with open("tests/fixtures/xform.pickle", "rb") as f:
+        expected = load(f)
+
+    r = run(cmd + args, stdout=PIPE, universal_newlines=False)
+    assert not r.returncode
+    result = loads(r.stdout)
+
+    for r, e in zip(result, expected):
+        assert_almost_equal(r, e)
+
+def test_align_multiple_w():
+    args = split(
+        "align tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
+        "tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
+        "-w 0.5 0.8 --format pickle"
+    )
+
+    r = run(cmd + args, stdout=PIPE, universal_newlines=False)
+    assert not r.returncode

@@ -10,6 +10,7 @@ from pickle import load, dump, HIGHEST_PROTOCOL
 dump = partial(dump, protocol=HIGHEST_PROTOCOL)
 from pathlib import Path
 from sys import stdout
+import numpy as np
 
 
 try:
@@ -25,11 +26,9 @@ except ImportError:
 
 def loadPoints(path):
     if path.suffix == '.txt':
-        from numpy import loadtxt
-        return loadtxt(str(path))
+        return np.loadtxt(str(path))
     if path.suffix == '.csv':
-        from numpy import loadtxt
-        return loadtxt(str(path), delimiter=',')
+        return np.loadtxt(str(path), delimiter=',')
     elif path.suffix == '.pickle':
         with path.open('rb') as f:
             return load(f)
@@ -140,19 +139,32 @@ def xform(args):
 
 
 def align(args):
+    if len(args.points) < 2:
+        raise ValueError("Must provide at least 2 point sets")
     points = list(map(loadPoints, args.points))
+    reference, target = points[0::2], points[1::2]
+
+    reference_classes = np.repeat(np.arange(len(reference)), list(map(len, reference)))
+    target_classes = np.repeat(np.arange(len(target)), list(map(len, target)))
+    w = np.repeat(np.broadcast_to(args.w, len(target)), list(map(len, target)))
+
+    prior = reference_classes.reshape(1, -1) == target_classes.reshape(-1, 1)
+    prior = prior / prior.sum(axis=-1, keepdims=True) * w.reshape(-1, 1)
+
+    reference, target = map(np.concatenate, [reference, target])
 
     if args.mode == "rigid":
         if args.scope == "global":
-            xform = globalAlignment(*points, w=args.w, maxiter=args.niter, mirror=True,
-                                    processes=args.j)
+            xform = globalAlignment(
+                reference, target, prior, mirror=True, maxiter=args.niter, processes=args.j
+            )
         else:
-            xform = last(islice(driftRigid(*points, w=args.w), args.niter))
+            xform = last(islice(driftRigid(reference, target, prior), args.niter))
     elif args.mode == "affine":
         if args.scope == "global":
             raise NotImplementedError("Global affine alignment is not yet implemented.")
         else:
-            xform = last(islice(driftAffine(*points, w=args.w), args.niter))
+            xform = last(islice(driftAffine(reference, target, prior), args.niter))
 
     saveXform(stdout.buffer, xform, args.format)
 
@@ -166,8 +178,8 @@ def main(args=None):
 
     points_help = "The point sets to align (in pickle, csv or txt format)"
     align_parser = subparsers.add_parser("align")
-    align_parser.add_argument("points", nargs=2, type=Path, help=points_help)
-    align_parser.add_argument("-w", type=float, default=0.5,
+    align_parser.add_argument("points", nargs='+', type=Path, help=points_help)
+    align_parser.add_argument("-w", type=float, nargs='+', default=[0.5],
                               help="The 'w' parameter for the CPD algorithm")
     align_parser.add_argument("--mode", type=str, choices={"rigid", "affine"},
                               default="rigid", help="The type of drift to use.")
