@@ -16,20 +16,24 @@ def globalAlignment(X, Y, w=0.5, nsteps=7, maxiter=200, mirror=False, processes=
 
     D = X.shape[1]
     with Pool(processes) as p:
-        xforms = p.imap_unordered(partial(tryAlignment, X, Y, w, maxiter),
-                                  map(lambda R: (rotationMatrix(*R), None, None),
-                                      spacedRotations(D, nsteps)))
+        initializers = [
+            (rotationMatrix(*R), None, None) for R in spacedRotations(D, nsteps)
+        ]
+        xforms = p.imap_unordered(partial(tryAlignment, X, Y, w, maxiter), initializers)
         if mirror:
             reflection = eye(Y.shape[1])
             reflection[0, 0] = -1
-            Y = affineXform(Y, reflection)
-            mirror_xforms = p.imap_unordered(partial(tryAlignment, X, Y, w, maxiter),
-                                             map(lambda R: (rotationMatrix(*R), None, None),
-                                                 spacedRotations(D, nsteps)))
-            mirror_xforms = starmap(lambda R, t, s: (R.dot(reflection), t, s), mirror_xforms)
+
+            mirror_xforms = p.imap_unordered(
+                partial(tryAlignment, X, affineXform(Y, reflection), w, maxiter), initializers
+            )
+            def mirror_xform(R, t, s):
+                return R.dot(reflection), t, s
+            mirror_xforms = starmap(mirror_xform, mirror_xforms)
         else:
             mirror_xforms = ()
-        solution = min(chain(xforms, mirror_xforms), key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
+        xforms = chain(xforms, mirror_xforms)
+        solution = min(xforms, key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
     return solution
 
 def eStep(X, Y, prior, sigma_squared):
