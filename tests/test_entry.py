@@ -87,3 +87,12 @@ def test_align_multiple_w():
 
     r = run(cmd + args, stdout=PIPE, universal_newlines=False)
     assert not r.returncode
+
+def test_plot_multiple(tmpdir):
+    args = split(
+        "plot tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
+        "tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
+        "tests/fixtures/xform.pickle --outfile {}".format(tmpdir.join('test.pdf'))
+    )
+    r = run(cmd + args, stdout=PIPE, universal_newlines=False)
+    assert not r.returncode

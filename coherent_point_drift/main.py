@@ -102,22 +102,30 @@ def plot(args):
         matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
+    if len(args.points) < 2:
+        raise ValueError("Must provide at least 2 point sets")
     points = list(map(loadPoints, args.points))
+    reference, target = points[0::2], points[1::2]
+    ndim = points[0].shape[1]
+
     xform = loadXform(args.transform)
-
     if len(xform) == 2:
-        transform = affineXform
+        transform = partial(affineXform, B=xform[0], t=xform[1])
     elif len(xform) == 3:
-        transform = rigidXform
+        transform = partial(rigidXform, R=xform[0], t=xform[1], s=xform[2])
+    xformed = list(map(transform, target))
 
-    proj_axes = tuple(filterfalse(partial(contains, args.axes), range(points[0].shape[1])))
-    points = list(map(partial(delete, obj=proj_axes, axis=1),
-                      points + [transform(points[1], *xform)]))
+    proj_axes = tuple(filterfalse(partial(contains, args.axes), range(ndim)))
+    project = partial(delete, obj=proj_axes, axis=1)
 
-    fig, ax = plt.subplots(1, 1)
-    ax.scatter(*points[0].T[::-1], color='red')
-    ax.scatter(*points[1].T[::-1], color='blue')
-    ax.scatter(*points[2].T[::-1], marker='x', color='blue')
+    colors = np.asarray(list(map("C{}".format, range(10))))
+    fig, axs = plt.subplots(1, 3, figsize=args.figsize, sharex=True, sharey=True)
+    for ax, pointss in zip(axs, [reference, target, xformed]):
+        for color, points in zip(colors, map(project, pointss)):
+            ax.scatter(*points.T[::-1], s=0.5, color=color)
+        ax.set_xticks([])
+        ax.set_yticks([])
+
     if args.outfile is None:
         plt.show()
     else:
@@ -198,9 +206,11 @@ def main(args=None):
     align_parser.set_defaults(func=align)
 
     plot_parser = subparsers.add_parser("plot")
-    plot_parser.add_argument("points", nargs=2, type=Path, help=points_help)
+    plot_parser.add_argument("points", nargs='+', type=Path, help=points_help)
     plot_parser.add_argument("transform", type=Path,
                              help="The transform")
+    plot_parser.add_argument("--figsize", type=float, nargs=2, default=(9, 3),
+                             help="The size of the rsulting figure")
     plot_parser.add_argument("--axes", type=int, nargs=2, default=(0, 1),
                              help="The axes to plot")
     plot_parser.add_argument("--outfile", type=Path,
