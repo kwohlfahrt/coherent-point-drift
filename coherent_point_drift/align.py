@@ -27,13 +27,14 @@ def globalAlignment(X, Y, w=0.5, nsteps=7, maxiter=200, mirror=False, processes=
             mirror_xforms = p.imap_unordered(
                 partial(tryAlignment, X, affineXform(Y, reflection), w, maxiter), initializers
             )
-            def mirror_xform(R, t, s):
-                return R.dot(reflection), t, s
+            def mirror_xform(P, xform):
+                R, t, s = xform
+                return P, (R.dot(reflection), t, s)
             mirror_xforms = starmap(mirror_xform, mirror_xforms)
         else:
             mirror_xforms = ()
         xforms = chain(xforms, mirror_xforms)
-        solution = min(xforms, key=lambda xform: RMSD(X, rigidXform(Y, *xform)))
+        solution = min(xforms, key=lambda xform: RMSD(X, rigidXform(Y, *xform[1]), xform[0]))
     return solution
 
 def eStep(X, Y, prior, sigma_squared):
@@ -102,7 +103,7 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
         t = mu_x - B.dot(mu_y)
         sigma_squared = (trace((X_hat.T * P.sum(axis=0, keepdims=True)).dot(X_hat))
                          - trace(X_hat.T.dot(P.T).dot(Y_hat).dot(B.T))) / (N_p * D)
-        yield B, t
+        yield P, (B, t)
 
 def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
     from numpy.linalg import svd, det, norm
@@ -164,4 +165,4 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
         t = mu_x - s * R.dot(mu_y)
         sigma_squared = (trace((X_hat.T * P.sum(axis=0, keepdims=True)).dot(X_hat))
                          - s * trace(A.T.dot(R))) / (N_p * D)
-        yield R, t, s
+        yield P, (R, t, s)

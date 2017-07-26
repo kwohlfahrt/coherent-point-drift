@@ -12,7 +12,7 @@ def test_global():
         Y = load(f)
     with open("tests/fixtures/xform.pickle", "rb") as f:
         expected = load(f)
-    xform = globalAlignment(X, Y, w=0.5, mirror=True)
+    P, xform = globalAlignment(X, Y, w=0.5, mirror=True)
 
     for r, e in zip(xform, expected):
         np.testing.assert_almost_equal(r, e)

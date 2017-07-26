@@ -37,7 +37,7 @@ def test_cpd_prior():
     X = rng.normal(size=(10, ndim))
     Y = rigidXform(X, R, t, s)
 
-    cpd = last(islice(driftRigid(X, Y, w=np.eye(len(X))), 200))
+    _, cpd = last(islice(driftRigid(X, Y, w=np.eye(len(X))), 200))
     for params in zip(align(X, Y), cpd):
         np.testing.assert_almost_equal(*params)
 

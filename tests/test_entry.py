@@ -96,3 +96,19 @@ def test_plot_multiple(tmpdir):
     )
     r = run(cmd + args, stdout=PIPE, universal_newlines=False)
     assert not r.returncode
+
+def test_global_multiple():
+    args = split(
+        "align tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
+        "tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
+        "--format pickle --scope global -w {w}".format(w=2/3)
+    )
+    with open("tests/fixtures/xform.pickle", "rb") as f:
+        expected = load(f)
+
+    r = run(cmd + args, stdout=PIPE, universal_newlines=False)
+    assert not r.returncode
+    result = loads(r.stdout)
+
+    for r, e in zip(result, expected):
+        assert_almost_equal(r, e)

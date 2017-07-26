@@ -163,16 +163,16 @@ def align(args):
 
     if args.mode == "rigid":
         if args.scope == "global":
-            xform = globalAlignment(
-                reference, target, prior, mirror=True, maxiter=args.niter, processes=args.j
+            P, xform = globalAlignment(
+                reference, target, prior, mirror=False, maxiter=args.niter, processes=args.j
             )
         else:
-            xform = last(islice(driftRigid(reference, target, prior), args.niter))
+            P, xform = last(islice(driftRigid(reference, target, prior), args.niter))
     elif args.mode == "affine":
         if args.scope == "global":
             raise NotImplementedError("Global affine alignment is not yet implemented.")
         else:
-            xform = last(islice(driftAffine(reference, target, prior), args.niter))
+            P, xform = last(islice(driftAffine(reference, target, prior), args.niter))
 
     saveXform(stdout.buffer, xform, args.format)
 
