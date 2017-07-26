@@ -66,7 +66,7 @@ def test_align_multiple():
     args = split(
         "align tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
         "tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
-        "-w {w} --format pickle".format(w=1/3)
+        "-w {w} --format pickle".format(w=2/3)
     )
     with open("tests/fixtures/xform.pickle", "rb") as f:
         expected = load(f)

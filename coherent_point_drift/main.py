@@ -157,7 +157,7 @@ def align(args):
     w = np.repeat(np.broadcast_to(args.w, len(target)), list(map(len, target)))
 
     prior = reference_classes.reshape(1, -1) == target_classes.reshape(-1, 1)
-    prior = prior / prior.sum(axis=-1, keepdims=True) * w.reshape(-1, 1)
+    prior = prior / prior.sum(axis=-1, keepdims=True) * (1 - w).reshape(-1, 1)
 
     reference, target = map(np.concatenate, [reference, target])
 
@@ -188,7 +188,7 @@ def main(args=None):
     align_parser = subparsers.add_parser("align")
     align_parser.add_argument("points", nargs='+', type=Path, help=points_help)
     align_parser.add_argument("-w", type=float, nargs='+', default=[0.5],
-                              help="The 'w' parameter for the CPD algorithm")
+                              help="The probability of points being outliers")
     align_parser.add_argument("--mode", type=str, choices={"rigid", "affine"},
                               default="rigid", help="The type of drift to use.")
     align_parser.add_argument("--niter", type=int, default=200,
