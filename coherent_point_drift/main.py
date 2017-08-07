@@ -125,6 +125,9 @@ def plot(args):
             ax.scatter(*points.T[::-1], s=0.5, color=color)
         ax.set_xticks([])
         ax.set_yticks([])
+    titles = ["Reference", "Data", "Transformed"]
+    for ax, title in zip(axs, titles):
+        ax.set_title(title)
 
     if args.outfile is None:
         plt.show()
