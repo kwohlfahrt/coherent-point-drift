@@ -45,14 +45,14 @@ def eStep(X, Y, prior, sigma_squared):
     N = len(X)
     M = len(Y)
 
-    dist = pairwiseDistanceSquared(Y, X)
+    dist = pairwiseDistanceSquared(X, Y)
     overlap = prior * exp(-dist / (2 * sigma_squared))
 
     # The original algorithm expects unit variance, so normalize (2πς**2)**D/2 to compensate
     # No other parts are scale-dependent
-    P = overlap / (overlap.sum(axis=0)
+    P = overlap / (overlap.sum(axis=1, keepdims=True)
                    + (2 * pi * sigma_squared) ** (D / 2)
-                   * (1 - prior.sum(axis=0)) / N / std(X) ** D)
+                   * (1 - prior.sum(axis=1, keepdims=True)) / N / std(X) ** D)
     return P
 
 # X is the reference, Y is the points
@@ -76,11 +76,11 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
     if t is None:
         t = X.mean(axis=0) - affineXform(Y, B=B).mean(axis=0)
     if isinstance(w, float):
-        prior = full((M, N), (1-w)/M, dtype='double')
+        prior = full((N, M), (1-w)/M, dtype='double')
     else:
         prior = asarray(w)
 
-    sigma_squared = pairwiseDistanceSquared(affineXform(Y, B, t), X).sum() / (D * M * N)
+    sigma_squared = pairwiseDistanceSquared(X, affineXform(Y, B, t)).sum() / (D * M * N)
     old_exceptions = seterr(divide='ignore', over='ignore', under='ignore', invalid='raise')
     while True:
         # E-step
@@ -92,17 +92,17 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
 
         # M-step
         N_p = P.sum()
-        mu_x = 1 / N_p * X.T.dot(P.T.sum(axis=1))
-        mu_y = 1 / N_p * Y.T.dot(P.sum(axis=1))
+        mu_x = 1 / N_p * X.T.dot(P.sum(axis=1))
+        mu_y = 1 / N_p * Y.T.dot(P.sum(axis=0))
         X_hat = X - mu_x.T
         Y_hat = Y - mu_y.T
 
         #This part is different to driftRigid
-        B = (X_hat.T.dot(P.T).dot(Y_hat)
-             .dot(inv((Y_hat.T *  P.sum(axis=1, keepdims=True).T).dot(Y_hat))))
+        B = (X_hat.T.dot(P).dot(Y_hat)
+             .dot(inv((Y_hat.T *  P.sum(axis=0, keepdims=True)).dot(Y_hat))))
         t = mu_x - B.dot(mu_y)
-        sigma_squared = (trace((X_hat.T * P.sum(axis=0, keepdims=True)).dot(X_hat))
-                         - trace(X_hat.T.dot(P.T).dot(Y_hat).dot(B.T))) / (N_p * D)
+        sigma_squared = (trace((X_hat.T * P.T.sum(axis=1, keepdims=True).T).dot(X_hat))
+                         - trace(X_hat.T.dot(P).dot(Y_hat).dot(B.T))) / (N_p * D)
         yield P, (B, t)
 
 def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
@@ -134,11 +134,11 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
         if not (0 <= w <= 1):
             raise ValueError("w must be in the range [0..1], got {}"
                             .format(w))
-        prior = full((M, N), (1-w)/M, dtype='double')
+        prior = full((N, M), (1-w)/M, dtype='double')
     else:
         prior = asarray(w)
 
-    sigma_squared = pairwiseDistanceSquared(rigidXform(Y, R, t, s), X).sum() / (D * M * N)
+    sigma_squared = pairwiseDistanceSquared(X, rigidXform(Y, R, t, s)).sum() / (D * M * N)
     old_exceptions = seterr(divide='ignore', over='ignore', under='ignore', invalid='raise')
     while True:
         # E-step
@@ -150,19 +150,19 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
 
         # M-step
         N_p = P.sum()
-        mu_x = 1 / N_p * X.T.dot(P.T.sum(axis=1))
-        mu_y = 1 / N_p * Y.T.dot(P.sum(axis=1))
+        mu_x = 1 / N_p * X.T.dot(P.sum(axis=1))
+        mu_y = 1 / N_p * Y.T.dot(P.sum(axis=0))
         X_hat = X - mu_x.T
         Y_hat = Y - mu_y.T
 
         # This part is different to driftAffine
-        A = X_hat.T.dot(P.T).dot(Y_hat)
+        A = X_hat.T.dot(P).dot(Y_hat)
         U, _, VT = svd(A)
         C = eye(D)
         C[-1, -1] = det(U.dot(VT))
         R = U.dot(C).dot(VT)
-        s = trace(A.T.dot(R)) / trace((Y_hat.T * P.sum(axis=1, keepdims=True).T).dot(Y_hat))
+        s = trace(A.T.dot(R)) / trace((Y_hat.T * P.sum(axis=0, keepdims=True)).dot(Y_hat))
         t = mu_x - s * R.dot(mu_y)
-        sigma_squared = (trace((X_hat.T * P.sum(axis=0, keepdims=True)).dot(X_hat))
+        sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T).dot(X_hat))
                          - s * trace(A.T.dot(R))) / (N_p * D)
         yield P, (R, t, s)
