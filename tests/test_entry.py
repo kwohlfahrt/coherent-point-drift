@@ -112,3 +112,14 @@ def test_global_multiple():
 
     for r, e in zip(result, expected):
         assert_almost_equal(r, e)
+
+def test_plot_sizes(tmpdir):
+    for sizes in ["1.0", "0.5 1.0"]:
+        args = split(
+            "plot tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
+            "tests/fixtures/ref.pickle tests/fixtures/deg.pickle "
+            "tests/fixtures/xform.pickle --sizes {} --outfile {}"
+            .format(sizes, tmpdir.join('test.pdf'))
+        )
+        r = run(cmd + args, stdout=PIPE, universal_newlines=False)
+        assert not r.returncode

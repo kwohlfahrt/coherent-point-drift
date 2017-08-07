@@ -107,6 +107,7 @@ def plot(args):
     points = list(map(loadPoints, args.points))
     reference, target = points[0::2], points[1::2]
     ndim = points[0].shape[1]
+    sizes = np.broadcast_to(args.sizes, len(reference))
 
     xform = loadXform(args.transform)
     if len(xform) == 2:
@@ -121,8 +122,8 @@ def plot(args):
     colors = np.asarray(list(map("C{}".format, range(10))))
     fig, axs = plt.subplots(1, 3, figsize=args.figsize, sharex=True, sharey=True)
     for ax, pointss in zip(axs, [reference, target, xformed]):
-        for color, points in zip(colors, map(project, pointss)):
-            ax.scatter(*points.T[::-1], s=0.5, color=color)
+        for color, size, points in zip(colors, sizes, map(project, pointss)):
+            ax.scatter(*points.T[::-1], s=size, color=color)
         ax.set_xticks([])
         ax.set_yticks([])
     titles = ["Reference", "Data", "Transformed"]
@@ -216,6 +217,8 @@ def main(args=None):
                              help="The size of the rsulting figure")
     plot_parser.add_argument("--axes", type=int, nargs=2, default=(0, 1),
                              help="The axes to plot")
+    plot_parser.add_argument("--sizes", type=float, nargs='+', default=[0.5],
+                             help="The size of markers (for each class)")
     plot_parser.add_argument("--outfile", type=Path,
                              help="Where to save the plot (omit to display)")
     plot_parser.set_defaults(func=plot)
