@@ -59,7 +59,7 @@ def eStep(X, Y, prior, sigma_squared):
 def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
     from numpy.linalg import inv
     from numpy import trace, eye, full
-    from numpy import seterr
+    from numpy import errstate
     from math import pi
     from .geometry import pairwiseDistanceSquared, affineXform, std
 
@@ -81,13 +81,13 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
         prior = asarray(w)
 
     sigma_squared = pairwiseDistanceSquared(X, affineXform(Y, B, t)).sum() / (D * M * N)
-    old_exceptions = seterr(divide='ignore', over='ignore', under='ignore', invalid='raise')
+    errs = {'divide': 'ignore', 'over': 'ignore', 'under': 'ignore', 'invalid': 'raise'}
     while True:
         # E-step
         try:
-            P = eStep(X, affineXform(Y, B, t), prior, sigma_squared)
+            with errstate(**errs):
+                P = eStep(X, affineXform(Y, B, t), prior, sigma_squared)
         except FloatingPointError:
-            seterr(**old_exceptions)
             break
 
         # M-step
@@ -108,7 +108,7 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
 def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
     from numpy.linalg import svd, det, norm
     from numpy import trace, eye, full, asarray
-    from numpy import seterr
+    from numpy import errstate
     from math import pi
     from .geometry import pairwiseDistanceSquared, rigidXform, std
 
@@ -139,13 +139,13 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
         prior = asarray(w)
 
     sigma_squared = pairwiseDistanceSquared(X, rigidXform(Y, R, t, s)).sum() / (D * M * N)
-    old_exceptions = seterr(divide='ignore', over='ignore', under='ignore', invalid='raise')
+    errs = {'divide': 'ignore', 'over': 'ignore', 'under': 'ignore', 'invalid': 'raise'}
     while True:
         # E-step
         try:
-            P = eStep(X, rigidXform(Y, R, t, s), prior, sigma_squared)
+            with errstate(**errs):
+                P = eStep(X, rigidXform(Y, R, t, s), prior, sigma_squared)
         except FloatingPointError:
-            seterr(**old_exceptions)
             break
 
         # M-step
