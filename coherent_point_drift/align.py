@@ -59,7 +59,6 @@ def eStep(X, Y, prior, sigma_squared):
 def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
     from numpy.linalg import inv
     from numpy import trace, eye, full
-    from numpy import errstate
     from math import pi
     from .geometry import pairwiseDistanceSquared, affineXform, std
 
@@ -81,14 +80,9 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
         prior = asarray(w)
 
     sigma_squared = pairwiseDistanceSquared(X, affineXform(Y, B, t)).sum() / (D * M * N)
-    errs = {'divide': 'ignore', 'over': 'ignore', 'under': 'ignore', 'invalid': 'raise'}
     while True:
         # E-step
-        try:
-            with errstate(**errs):
-                P = eStep(X, affineXform(Y, B, t), prior, sigma_squared)
-        except FloatingPointError:
-            break
+        P = eStep(X, affineXform(Y, B, t), prior, sigma_squared)
 
         # M-step
         N_p = P.sum()
@@ -101,14 +95,16 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
         B = (X_hat.T.dot(P).dot(Y_hat)
              .dot(inv((Y_hat.T *  P.sum(axis=0, keepdims=True)).dot(Y_hat))))
         t = mu_x - B.dot(mu_y)
+        old_sigma_squared = sigma_squared
         sigma_squared = (trace((X_hat.T * P.T.sum(axis=1, keepdims=True).T).dot(X_hat))
                          - trace(X_hat.T.dot(P).dot(Y_hat).dot(B.T))) / (N_p * D)
         yield P, (B, t)
+        if abs(sigma_squared) < 1e-15 or abs(old_sigma_squared - sigma_squared) < 1e-15:
+            break
 
 def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
     from numpy.linalg import svd, det, norm
     from numpy import trace, eye, full, asarray
-    from numpy import errstate
     from math import pi
     from .geometry import pairwiseDistanceSquared, rigidXform, std
 
@@ -139,14 +135,9 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
         prior = asarray(w)
 
     sigma_squared = pairwiseDistanceSquared(X, rigidXform(Y, R, t, s)).sum() / (D * M * N)
-    errs = {'divide': 'ignore', 'over': 'ignore', 'under': 'ignore', 'invalid': 'raise'}
     while True:
         # E-step
-        try:
-            with errstate(**errs):
-                P = eStep(X, rigidXform(Y, R, t, s), prior, sigma_squared)
-        except FloatingPointError:
-            break
+        P = eStep(X, rigidXform(Y, R, t, s), prior, sigma_squared)
 
         # M-step
         N_p = P.sum()
@@ -163,6 +154,10 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
         R = U.dot(C).dot(VT)
         s = trace(A.T.dot(R)) / trace((Y_hat.T * P.sum(axis=0, keepdims=True)).dot(Y_hat))
         t = mu_x - s * R.dot(mu_y)
+        old_sigma_squared = sigma_squared
         sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T).dot(X_hat))
                          - s * trace(A.T.dot(R))) / (N_p * D)
         yield P, (R, t, s)
+        if abs(sigma_squared) < 1e-15 or abs(old_sigma_squared - sigma_squared) < 1e-15:
+            # Sigma squared == 0 on positive fit, but occasionally ~= -1e17
+            break
