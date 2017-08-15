@@ -161,7 +161,7 @@ def align(args):
     w = np.repeat(np.broadcast_to(args.w, len(target)), list(map(len, target)))
 
     prior = reference_classes.reshape(-1, 1) == target_classes.reshape(1, -1)
-    prior = prior / prior.sum(axis=0, keepdims=True) * (1 - w).reshape(1, -1)
+    prior = prior / prior.sum(axis=1, keepdims=True) * (1 - w).reshape(1, -1)
 
     reference, target = map(np.concatenate, [reference, target])
 
