@@ -20,7 +20,7 @@ def test_least_squares():
 
     np.testing.assert_almost_equal(np.linalg.inv(R), alignment[0])
     np.testing.assert_almost_equal(1/s, alignment[2])
-    np.testing.assert_almost_equal(np.linalg.inv(R).dot(-t) / s, alignment[1])
+    np.testing.assert_almost_equal((np.linalg.inv(R) @ -t) / s, alignment[1])
     np.testing.assert_almost_equal(rigidXform(Y, *align(X, Y)), X)
 
 

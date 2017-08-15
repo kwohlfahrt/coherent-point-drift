@@ -29,7 +29,7 @@ def globalAlignment(X, Y, w=0.5, nsteps=7, maxiter=200, mirror=False, processes=
             )
             def mirror_xform(P, xform):
                 R, t, s = xform
-                return P, (R.dot(reflection), t, s)
+                return P, (R @ reflection, t, s)
             mirror_xforms = starmap(mirror_xform, mirror_xforms)
         else:
             mirror_xforms = ()
@@ -86,18 +86,17 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
 
         # M-step
         N_p = P.sum()
-        mu_x = 1 / N_p * X.T.dot(P.sum(axis=1))
-        mu_y = 1 / N_p * Y.T.dot(P.sum(axis=0))
+        mu_x = 1 / N_p * X.T @ P.sum(axis=1)
+        mu_y = 1 / N_p * Y.T @ P.sum(axis=0)
         X_hat = X - mu_x.T
         Y_hat = Y - mu_y.T
 
         #This part is different to driftRigid
-        B = (X_hat.T.dot(P).dot(Y_hat)
-             .dot(inv((Y_hat.T * P.sum(axis=0, keepdims=True)).dot(Y_hat))))
-        t = mu_x - B.dot(mu_y)
+        B = (X_hat.T @ P @ Y_hat) @ inv((Y_hat.T * P.sum(axis=0, keepdims=True)) @ Y_hat)
+        t = mu_x - B @ mu_y
         old_sigma_squared = sigma_squared
-        sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T).dot(X_hat))
-                         - trace(X_hat.T.dot(P).dot(Y_hat).dot(B.T))) / (N_p * D)
+        sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T) @ X_hat)
+                         - trace(X_hat.T @ P @ Y_hat @ B.T)) / (N_p * D)
         yield P, (B, t)
         if abs(sigma_squared) < 1e-15 or abs(old_sigma_squared - sigma_squared) < 1e-15:
             break
@@ -141,22 +140,22 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
 
         # M-step
         N_p = P.sum()
-        mu_x = 1 / N_p * X.T.dot(P.sum(axis=1))
-        mu_y = 1 / N_p * Y.T.dot(P.sum(axis=0))
+        mu_x = 1 / N_p * X.T @ P.sum(axis=1)
+        mu_y = 1 / N_p * Y.T @ P.sum(axis=0)
         X_hat = X - mu_x.T
         Y_hat = Y - mu_y.T
 
         # This part is different to driftAffine
-        A = X_hat.T.dot(P).dot(Y_hat)
+        A = X_hat.T @ P @ Y_hat
         U, _, VT = svd(A)
         C = eye(D)
-        C[-1, -1] = det(U.dot(VT))
-        R = U.dot(C).dot(VT)
-        s = trace(A.T.dot(R)) / trace((Y_hat.T * P.sum(axis=0, keepdims=True)).dot(Y_hat))
-        t = mu_x - s * R.dot(mu_y)
+        C[-1, -1] = det(U @ VT)
+        R = U @ C @ VT
+        s = trace(A.T @ R) / trace((Y_hat.T * P.sum(axis=0, keepdims=True)) @ Y_hat)
+        t = mu_x - s * R @ mu_y
         old_sigma_squared = sigma_squared
-        sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T).dot(X_hat))
-                         - s * trace(A.T.dot(R))) / (N_p * D)
+        sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T) @ X_hat)
+                         - s * trace(A.T @ R)) / (N_p * D)
         yield P, (R, t, s)
         if abs(sigma_squared) < 1e-15 or abs(old_sigma_squared - sigma_squared) < 1e-15:
             # Sigma squared == 0 on positive fit, but occasionally ~= -1e17

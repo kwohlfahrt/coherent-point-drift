@@ -16,16 +16,16 @@ def align(X, Y, mirror=False):
     ss_x = (la.norm(X_hat, axis=1) ** 2).mean()
     ss_y = (la.norm(Y_hat, axis=1) ** 2).mean()
 
-    sigma = X_hat.T.dot(Y_hat) / len(X)
+    sigma = X_hat.T @ Y_hat / len(X)
 
     U, D, VT = la.svd(sigma)
     S = np.eye(len(D))
     if la.det(sigma) < 0:
         S[-1, -1] = -1
 
-    R = U.dot(S).dot(VT)
-    s = 1 / ss_y * np.trace(np.diag(D).dot(S))
-    t = mu_x - s * R.dot(mu_y)
+    R = U @ S @ VT
+    s = 1 / ss_y * np.trace(np.diag(D) @ S)
+    t = mu_x - s * R @ mu_y
     xform = R, t, s
     if mirror:
         ndim = Y.shape[-1]

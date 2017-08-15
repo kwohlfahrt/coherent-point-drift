@@ -84,7 +84,7 @@ def std(x):
     return sqrt(((x - x.mean(axis=0)) ** 2).sum(axis=1).mean())
 
 def rigidXform(X, R=array(1), t=0.0, s=1.0):
-    return s * R.dot(X.T).T + t
+    return s * (R @ X.T).T + t
 
 def affineXform(X, B=array(1), t=0):
-    return B.dot(X.T).T + t
+    return (B @ X.T).T + t
