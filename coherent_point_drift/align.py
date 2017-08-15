@@ -58,7 +58,7 @@ def eStep(X, Y, prior, sigma_squared):
 # X is the reference, Y is the points
 def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
     from numpy.linalg import inv
-    from numpy import trace, eye, full
+    from numpy import trace, eye, full, asarray
     from math import pi
     from .geometry import pairwiseDistanceSquared, affineXform, std
 
@@ -93,10 +93,10 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
 
         #This part is different to driftRigid
         B = (X_hat.T.dot(P).dot(Y_hat)
-             .dot(inv((Y_hat.T *  P.sum(axis=0, keepdims=True)).dot(Y_hat))))
+             .dot(inv((Y_hat.T * P.sum(axis=0, keepdims=True)).dot(Y_hat))))
         t = mu_x - B.dot(mu_y)
         old_sigma_squared = sigma_squared
-        sigma_squared = (trace((X_hat.T * P.T.sum(axis=1, keepdims=True).T).dot(X_hat))
+        sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T).dot(X_hat))
                          - trace(X_hat.T.dot(P).dot(Y_hat).dot(B.T))) / (N_p * D)
         yield P, (B, t)
         if abs(sigma_squared) < 1e-15 or abs(old_sigma_squared - sigma_squared) < 1e-15:

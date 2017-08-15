@@ -26,3 +26,20 @@ def test_perfect_rigid():
     np.testing.assert_almost_equal(R, np.eye(2))
     np.testing.assert_almost_equal(t, np.zeros(2))
     np.testing.assert_almost_equal(s, 1)
+
+def test_affine():
+    X = loadPoints(Path("tests/fixtures/ref.txt"))
+    Y = loadPoints(Path("tests/fixtures/deg.txt"))
+    expected = loadXform(Path("tests/fixtures/affine.pickle"))
+
+    P, xform = last(islice(driftAffine(X, Y, w=0.5), 100))
+
+    for r, e in zip(xform, expected):
+        np.testing.assert_almost_equal(r, e)
+
+def test_perfect_affine():
+    X = loadPoints(Path("tests/fixtures/ref.txt"))
+    P, (B, t) = last(islice(driftAffine(X, X), 100))
+
+    np.testing.assert_almost_equal(B, np.eye(2))
+    np.testing.assert_almost_equal(t, np.zeros(2))
