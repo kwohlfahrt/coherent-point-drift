@@ -79,8 +79,9 @@ def randomRotations(D, rng=None):
                                   .format(D))
 
 def std(x):
-    from numpy import var, sqrt
-    return sqrt(var(x, axis=0).mean())
+    from numpy import sqrt
+
+    return sqrt(((x - x.mean(axis=0)) ** 2).sum(axis=1).mean())
 
 def rigidXform(X, R=array(1), t=0.0, s=1.0):
     return s * R.dot(X.T).T + t
