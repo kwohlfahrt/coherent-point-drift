@@ -4,7 +4,8 @@ def tryAlignment(X, Y, w, maxiter, initial_guess):
     from .util import last
     from itertools import islice
 
-    return last(islice(driftRigid(X, Y, w, initial_guess), maxiter))
+    P, xform = last(islice(driftRigid(X, initial_guess @ Y, w), maxiter))
+    return P, xform @ initial_guess
 
 def globalAlignment(X, Y, w=0.5, nsteps=7, maxiter=200, mirror=False, processes=None):
     from .geometry import spacedRotations, RMSD, RigidXform, rotationMatrix
@@ -16,9 +17,9 @@ def globalAlignment(X, Y, w=0.5, nsteps=7, maxiter=200, mirror=False, processes=
 
     D = X.shape[1]
     with Pool(processes) as p:
-        initializers = [
-            (rotationMatrix(*R), None, None) for R in spacedRotations(D, nsteps)
-        ]
+        initializers = list(map(
+            RigidXform, starmap(rotationMatrix, spacedRotations(D, nsteps))
+        ))
         xforms = p.imap_unordered(partial(tryAlignment, X, Y, w, maxiter), initializers)
         if mirror:
             reflection = eye(Y.shape[1])
@@ -54,7 +55,7 @@ def eStep(X, Y, prior, sigma_squared):
     return P
 
 # X is the reference, Y is the points
-def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
+def driftAffine(X, Y, w=0.5):
     from numpy.linalg import inv
     from numpy import trace, eye, full, asarray
     from math import pi
@@ -64,14 +65,9 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
     N = len(X)
     M = len(Y)
 
-    B, t = initial_guess
-    if B is None:
-        B = eye(D)
-    if guess_scale:
-        s = std(X) / std(AffineXform(B=B) @ Y)
-        B = s * B
-    if t is None:
-        t = X.mean(axis=0) - (AffineXform(B=B) @ Y).mean(axis=0)
+    B = (std(X) / std(Y)) * eye(D)
+    t = X.mean(axis=0) - (AffineXform(B) @ Y).mean(axis=0)
+
     if isinstance(w, float):
         prior = full((N, M), (1-w)/M, dtype='double')
     else:
@@ -99,7 +95,7 @@ def driftAffine(X, Y, w=0.5, initial_guess=(None, None), guess_scale=True):
         if abs(sigma_squared) < 1e-15 or abs(old_sigma_squared - sigma_squared) < 1e-15:
             break
 
-def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
+def driftRigid(X, Y, w=0.5):
     from numpy.linalg import svd, det, norm
     from numpy import trace, eye, full, asarray
     from math import pi
@@ -116,13 +112,10 @@ def driftRigid(X, Y, w=0.5, initial_guess=(None, None, None)):
     N = len(X)
     M = len(Y)
 
-    R, t, s = initial_guess
-    if R is None:
-        R = eye(D)
-    if s is None:
-        s = std(X) / std(RigidXform(R=R) @ Y)
-    if t is None:
-        t = X.mean(axis=0) - (RigidXform(R=R, s=s) @ Y).mean(axis=0)
+    R = eye(D)
+    s = std(X) / std(Y)
+    t = X.mean(axis=0) - Y.mean(axis=0)
+
     if isinstance(w, float):
         if not (0 <= w <= 1):
             raise ValueError("w must be in the range [0..1], got {}"
