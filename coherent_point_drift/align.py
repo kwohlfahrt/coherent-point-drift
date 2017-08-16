@@ -92,7 +92,7 @@ def driftAffine(X, Y, w=0.5):
         sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T) @ X_hat)
                          - trace(X_hat.T @ P @ Y_hat @ B.T)) / (N_p * D)
         yield P, AffineXform(B, t)
-        if abs(sigma_squared) < 1e-15 or abs(old_sigma_squared - sigma_squared) < 1e-15:
+        if abs(sigma_squared) < 1e-12 or abs(old_sigma_squared - sigma_squared) < 1e-12:
             break
 
 def driftRigid(X, Y, w=0.5):
@@ -148,6 +148,6 @@ def driftRigid(X, Y, w=0.5):
         sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T) @ X_hat)
                          - s * trace(A.T @ R)) / (N_p * D)
         yield P, RigidXform(R, t, s)
-        if abs(sigma_squared) < 1e-15 or abs(old_sigma_squared - sigma_squared) < 1e-15:
+        if abs(sigma_squared) < 1e-12 or abs(old_sigma_squared - sigma_squared) < 1e-12:
             # Sigma squared == 0 on positive fit, but occasionally ~= -1e17
             break
