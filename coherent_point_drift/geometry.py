@@ -1,4 +1,5 @@
 from numpy import array
+from functools import partial
 
 def RMSD(X, Y, P):
     from numpy import sqrt
@@ -83,8 +84,113 @@ def std(x):
 
     return sqrt(((x - x.mean(axis=0)) ** 2).sum(axis=1).mean())
 
-def rigidXform(X, R=array(1), t=0.0, s=1.0):
-    return s * (R @ X.T).T + t
+class RigidXform:
+    def __init__(self, R=None, t=None, s=None):
+        self.R = R
+        self.t = t
+        self.s = s
 
-def affineXform(X, B=array(1), t=0):
-    return (B @ X.T).T + t
+    def matrices(self, ndim):
+        from numpy import eye, zeros
+
+        R = self.R if self.R is not None else eye(ndim)
+        t = self.t if self.t is not None else zeros(ndim)
+        s = self.s if self.s is not None else 1.0
+        return R, t, s
+
+    @property
+    def ndim(self):
+        if self.R is not None:
+            return self.R.shape[0]
+        elif self.t is not None:
+            return len(self.t)
+        else:
+            return None
+
+    @property
+    def inverse(self):
+        from numpy.linalg import inv
+        return type(self)(R=inv(self.R), s=1/self.s) @ type(self)(t=-self.t)
+
+    def __matmul__(self, other):
+        if isinstance(other, type(self)):
+            # Compose
+            ndim = self.ndim or other.ndim
+            if ndim is None:
+                return type(self)()
+
+            self_R, self_t, self_s = self.matrices(ndim)
+            other_R, other_t, other_s = other.matrices(ndim)
+
+            R = self_R @ other_R
+            t = self_s * self_R @ other_t + self_t
+            s = self_s * other_s
+            return type(self)(R, t, s)
+        else:
+            # Apply
+            ndim = other.shape[1]
+            R, t, s = self.matrices(ndim)
+            return s * (R.dot(other.T)).T + t
+
+    def __eq__(self, other):
+        return self.R == other.R and self.t == other.t and self.s == other.s
+
+    def __str__(self):
+        R = '\n'.join(map(' '.join, map(partial(map, str), self.R)))
+        t = ' '.join(map(str, self.t))
+        s = str(self.s)
+        return '\n\n'.join([R, t, s])
+
+class AffineXform:
+    def __init__(self, B=None, t=None):
+        self.B = B
+        self.t = t
+
+    def matrices(self, ndim):
+        from numpy import eye, zeros
+
+        B = self.B if self.B is not None else eye(ndim)
+        t = self.t if self.t is not None else zeros(ndim)
+        return B, t
+
+    @property
+    def ndim(self):
+        if self.B is not None:
+            return self.B.shape[0]
+        elif self.t is not None:
+            return len(self.t)
+        else:
+            return None
+
+    @property
+    def inverse(self):
+        from numpy.linalg import inv
+        return type(self)(B=inv(self.B)) @ type(self)(t=-self.t)
+
+    def __matmul__(self, other):
+        if isinstance(other, type(self)):
+            # Compose
+            ndim = self.ndim or other.ndim
+            if ndim is None:
+                return type(self)()
+
+            self_B, self_t = self.matrices(ndim)
+            other_B, other_t = other.matrices(ndim)
+
+            B = self_B @ other_B
+            t = self_B @ other_t + self_t
+            return type(self)(B, t)
+        else:
+            # Apply
+            ndim = other.shape[1]
+            B, t = self.matrices(ndim)
+            return (B.dot(other.T)).T + t
+
+
+    def __eq__(self, other):
+        return self.B == other.B and self.t == other.t
+
+    def __str__(self):
+        B = '\n'.join(map(' '.join, map(partial(map, str), self.B)))
+        t = ' '.join(map(str, self.t))
+        return '\n\n'.join([B, t])

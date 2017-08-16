@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from itertools import islice
+from itertools import islice, starmap
 
 from coherent_point_drift.geometry import *
 
@@ -24,3 +24,55 @@ def test_std():
     unit = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     unit = np.concatenate([unit, -unit])
     assert std(unit) == 1
+
+def test_rigid_associative():
+    rng = np.random.RandomState(4)
+    Rs = starmap(rotationMatrix, randomRotations(3, rng))
+    xform1 = RigidXform(next(Rs), rng.normal(size=3), rng.lognormal(0.0, 0.5))
+    xform2 = RigidXform(next(Rs), rng.normal(size=3), rng.lognormal(0.0, 0.5))
+
+    points = rng.normal(size=(10, 3))
+    np.testing.assert_allclose((xform1 @ xform2) @ points, xform1 @ (xform2 @ points))
+
+def test_rigid_identity():
+    rng = np.random.RandomState(4)
+    xform = RigidXform(np.eye(3), np.zeros(3), 1)
+
+    points = rng.normal(size=(10, 3))
+    np.testing.assert_allclose(xform @ points, points)
+    np.testing.assert_allclose(RigidXform() @ points, points)
+    np.testing.assert_allclose(xform @ RigidXform() @ points, points)
+    np.testing.assert_allclose(RigidXform() @ RigidXform() @ points, points)
+
+def test_rigid_inverse():
+    rng = np.random.RandomState(4)
+    Rs = starmap(rotationMatrix, randomRotations(3, rng))
+    xform = RigidXform(next(Rs), rng.normal(size=3), rng.lognormal(0.0, 0.5))
+
+    points = rng.normal(size=(10, 3))
+    np.testing.assert_allclose(xform.inverse @ xform @ points, points)
+
+def test_affine_associative():
+    rng = np.random.RandomState(4)
+    xform1 = AffineXform(rng.normal(size=(3, 3)), rng.normal(size=3))
+    xform2 = AffineXform(rng.normal(size=(3, 3)), rng.normal(size=3))
+
+    points = rng.normal(size=(10, 3))
+    np.testing.assert_allclose((xform1 @ xform2) @ points, xform1 @ (xform2 @ points))
+
+def test_affine_identity():
+    rng = np.random.RandomState(4)
+    xform = AffineXform(np.eye(3), np.zeros(3))
+
+    points = rng.normal(size=(10, 3))
+    np.testing.assert_allclose(xform @ points, points)
+    np.testing.assert_allclose(AffineXform() @ points, points)
+    np.testing.assert_allclose(xform @ AffineXform() @ points, points)
+    np.testing.assert_allclose(AffineXform() @ AffineXform() @ points, points)
+
+def test_affine_inverse():
+    rng = np.random.RandomState(4)
+    xform = AffineXform(rng.normal(size=(3, 3)), rng.normal(size=3))
+
+    points = rng.normal(size=(10, 3))
+    np.testing.assert_allclose(xform.inverse @ xform @ points, points)

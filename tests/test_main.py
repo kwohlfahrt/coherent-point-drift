@@ -22,7 +22,7 @@ def test_print_points(tmpdir):
 
 
 def test_print_xform(tmpdir):
-    xform = np.asarray([[1.0, 0.3], [0.3, 2.0]]), np.asarray([0.4, 1.0]), 5.0
+    xform = RigidXform(np.asarray([[1.0, 0.3], [0.3, 2.0]]), np.asarray([0.4, 1.0]), 5.0)
 
     filename = tmpdir.join("tmp")
     with filename.open("wb") as f:

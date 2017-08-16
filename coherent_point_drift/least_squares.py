@@ -1,4 +1,4 @@
-from .geometry import rigidXform
+from .geometry import RigidXform
 
 def score(X, Y):
     return ((X - Y) ** 2).sum()
@@ -26,11 +26,12 @@ def align(X, Y, mirror=False):
     R = U @ S @ VT
     s = 1 / ss_y * np.trace(np.diag(D) @ S)
     t = mu_x - s * R @ mu_y
-    xform = R, t, s
+    xform = RigidXform(R, t, s)
     if mirror:
-        ndim = Y.shape[-1]
-        mirrored = np.array([[1] * (Y.shape[-1] - 1) + [-1]]) * Y
-        R, t, s = align(X, mirrored, mirror=False)
-        R[-1, -1] *= -1
-        xform = min(xform, (R, t, s), key=lambda x: score(X, rigidXform(Y, *x)))
+        reflection = np.eye(Y.shape[1])
+        reflection[-1, -1] = -1
+        reflection = RigidXform(reflection)
+
+        mirrored_xform = reflection @ align(X, reflection @ Y, mirror=False)
+        xform = min(xform, mirrored_xform, key=lambda x: score(X, x @ Y))
     return xform

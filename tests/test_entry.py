@@ -18,8 +18,9 @@ def test_align():
     assert not r.returncode
     result = loads(r.stdout)
 
-    for r, e in zip(result, expected):
-        assert_almost_equal(r, e)
+    np.testing.assert_almost_equal(result.R, expected.R)
+    np.testing.assert_almost_equal(result.t, expected.t)
+    np.testing.assert_almost_equal(result.s, expected.s)
 
 def test_xform_inverse(tmpdir):
     expected = loadPoints(Path("tests/fixtures/ref.txt"))
@@ -73,8 +74,9 @@ def test_align_multiple():
     assert not r.returncode
     result = loads(r.stdout)
 
-    for r, e in zip(result, expected):
-        assert_almost_equal(r, e)
+    np.testing.assert_almost_equal(result.R, expected.R)
+    np.testing.assert_almost_equal(result.t, expected.t)
+    np.testing.assert_almost_equal(result.s, expected.s)
 
 def test_align_multiple_w():
     args = split(
@@ -107,8 +109,9 @@ def test_global_multiple():
     assert not r.returncode
     result = loads(r.stdout)
 
-    for r, e in zip(result, expected):
-        assert_almost_equal(r, e)
+    np.testing.assert_almost_equal(result.R, expected.R)
+    np.testing.assert_almost_equal(result.t, expected.t)
+    np.testing.assert_almost_equal(result.s, expected.s)
 
 def test_plot_sizes(tmpdir):
     for sizes in ["1.0", "0.5 1.0"]:

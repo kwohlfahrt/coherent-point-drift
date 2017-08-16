@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 from .align import driftRigid, driftAffine, globalAlignment
-from .geometry import rigidXform, affineXform, RMSD
+from .geometry import RigidXform, AffineXform, RMSD
 from .util import last
 from itertools import islice, filterfalse
-from operator import contains
+import operator as op
 from functools import partial
 from pickle import load, dump, HIGHEST_PROTOCOL
 dump = partial(dump, protocol=HIGHEST_PROTOCOL)
@@ -59,9 +59,9 @@ def loadXform(path):
             raise RuntimeError("Loading .mat files not supported in SciPy")
         xform = loadmat(str(path))
         if set("Rts") <= set(xform.keys()):
-            return xform['R'], xform['t'], xform['s']
+            return RigidXform(xform['R'], xform['t'], xform['s'])
         if set("Bt") <= set(xform.keys()):
-            return xform['B'], xform['t']
+            return AffineXform(xform['B'], xform['t'])
         else:
             raise RuntimeError("Invalid transform format"
                                "(must contain [R, t, s] or [B, t]), not {}"
@@ -74,21 +74,14 @@ def saveXform(f, xform, fmt):
     if fmt == "pickle":
         dump(xform, f)
     elif fmt == "mat":
-        if len(xform) == 3:
-            labels = "R", "t", "s"
-        elif len(xform) == 2:
-            labels = "B", "t"
+        if isinstance(xform, RigidXform):
+            savemat(f, {"R": xform.R, "t": xform.t, "s": xform.s})
+        if isinstance(xform, AffineXform):
+            savemat(f, {"B": xform.B, "t": xform.t})
         else:
             raise ValueError("Invalid xform")
-        savemat(f, dict(zip(labels, xform)))
     elif fmt == "print":
-        lines = map(str.encode, map(' '.join, map(partial(map, str), xform[0])))
-        f.write(b'\n'.join(lines))
-        f.write(b'\n\n')
-        f.write(' '.join(map(str, xform[1])).encode())
-        f.write(b'\n\n')
-        if len(xform) > 2:
-            f.write(str(xform[2]).encode())
+        f.write(str(xform).encode())
         f.write(b'\n')
     else:
         raise ValueError("Invalid format: {}".format(fmt))
@@ -109,14 +102,9 @@ def plot(args):
     ndim = points[0].shape[1]
     sizes = np.broadcast_to(args.sizes, len(reference))
 
-    xform = loadXform(args.transform)
-    if len(xform) == 2:
-        transform = partial(affineXform, B=xform[0], t=xform[1])
-    elif len(xform) == 3:
-        transform = partial(rigidXform, R=xform[0], t=xform[1], s=xform[2])
-    xformed = list(map(transform, target))
+    xformed = list(map(partial(op.matmul, loadXform(args.transform)), target))
 
-    proj_axes = tuple(filterfalse(partial(contains, args.axes), range(ndim)))
+    proj_axes = tuple(filterfalse(partial(op.contains, args.axes), range(ndim)))
     project = partial(delete, obj=proj_axes, axis=1)
 
     colors = np.asarray(list(map("C{}".format, range(10))))
@@ -137,16 +125,9 @@ def plot(args):
         fig.savefig(str(args.outfile))
 
 
-# TODO: Test this, should be straightforward!
 def xform(args):
     points = loadPoints(args.points)
-    xform = loadXform(args.transform)
-
-    if len(xform) == 2:
-        transformed = affineXform(points, *xform)
-    elif len(xform) == 3:
-        transformed = rigidXform(points, *xform)
-
+    transformed = loadXform(args.transform) @ points
     savePoints(stdout.buffer, transformed, args.format)
 
 
