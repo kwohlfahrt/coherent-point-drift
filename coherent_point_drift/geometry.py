@@ -110,7 +110,11 @@ class RigidXform:
     @property
     def inverse(self):
         from numpy.linalg import inv
-        return type(self)(R=inv(self.R), s=1/self.s) @ type(self)(t=-self.t)
+        R = inv(self.R) if self.R is not None else None
+        s = 1/self.s if self.s is not None else None
+        t = -self.t if self.t is not None else None
+
+        return type(self)(R=R, s=s) @ type(self)(t=t)
 
     def __matmul__(self, other):
         if isinstance(other, type(self)):
@@ -141,6 +145,13 @@ class RigidXform:
         s = str(self.s)
         return '\n\n'.join([R, t, s])
 
+    @classmethod
+    def normalize(cls, X):
+        N, D = X.shape
+        s = 1 / std(X)
+        t = -X.mean(axis=0) * s
+        return cls(t=t, s=s)
+
 class AffineXform:
     def __init__(self, B=None, t=None):
         self.B = B
@@ -165,7 +176,10 @@ class AffineXform:
     @property
     def inverse(self):
         from numpy.linalg import inv
-        return type(self)(B=inv(self.B)) @ type(self)(t=-self.t)
+        B = inv(self.B) if self.B is not None else None
+        t = -self.t if self.t is not None else None
+
+        return type(self)(B=B) @ type(self)(t=t)
 
     def __matmul__(self, other):
         if isinstance(other, type(self)):
@@ -194,3 +208,12 @@ class AffineXform:
         B = '\n'.join(map(' '.join, map(partial(map, str), self.B)))
         t = ' '.join(map(str, self.t))
         return '\n\n'.join([B, t])
+
+    @classmethod
+    def normalize(cls, X):
+        from numpy import eye
+
+        N, D = X.shape
+        s = 1 / std(X)
+        t = -X.mean(axis=0) * s
+        return cls(B=eye(D) * s, t=t)
