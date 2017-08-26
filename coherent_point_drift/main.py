@@ -107,13 +107,19 @@ def plot(args):
     proj_axes = tuple(filterfalse(partial(op.contains, args.axes), range(ndim)))
     project = partial(delete, obj=proj_axes, axis=1)
 
-    colors = np.asarray(list(map("C{}".format, range(10))))
+    colors = list(map("C{}".format, range(10)))
     fig, axs = plt.subplots(1, 3, figsize=args.figsize, sharex=True, sharey=True)
-    for ax, pointss in zip(axs, [reference, target, xformed]):
+    for i, (ax, pointss) in enumerate(zip(axs, [reference, target, xformed])):
         for color, size, points in zip(colors, sizes, map(project, pointss)):
-            ax.scatter(*points.T[::-1], s=size, color=color)
+            fc = ec = color
+            if i == 2 and args.reference:
+                fc = 'none'
+            ax.scatter(*points.T[::-1], s=size, color=fc, edgecolor=ec, marker='o')
         ax.set_xticks([])
         ax.set_yticks([])
+    if args.reference:
+        for color, size, points in zip(colors, sizes, map(project, reference)):
+            axs[-1].scatter(*points.T[::-1], s=size, color=color, marker='+')
     titles = ["Reference", "Data", "Transformed"]
     for ax, title in zip(axs, titles):
         ax.set_title(title)
@@ -200,6 +206,8 @@ def main(args=None):
                              help="The axes to plot")
     plot_parser.add_argument("--sizes", type=float, nargs='+', default=[0.5],
                              help="The size of markers (for each class)")
+    plot_parser.add_argument("--reference", action="store_true",
+                             help="Plot the reference in the alignment view")
     plot_parser.add_argument("--outfile", type=Path,
                              help="Where to save the plot (omit to display)")
     plot_parser.set_defaults(func=plot)
