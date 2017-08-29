@@ -107,14 +107,20 @@ def plot(args):
     xformed = list(map(partial(op.matmul, loadXform(args.transform)), target))
 
     project = op.itemgetter((slice(None), list(args.axes)))
+    center = project(
+        np.concatenate(target).mean(axis=0, keepdims=True) -
+        np.concatenate(reference).mean(axis=0, keepdims=True)
+    )
 
     colors = list(map("C{}".format, range(10)))
     fig, axs = plt.subplots(1, 3, figsize=args.figsize, sharex=True, sharey=True)
-    for i, (ax, pointss) in enumerate(zip(axs, [reference, target, xformed])):
+    for ax, pointss in zip(axs, [reference, target, xformed]):
         for color, size, points in zip(colors, sizes, map(project, pointss)):
             fc = ec = color
-            if i == 2 and args.reference:
+            if pointss is xformed and args.reference:
                 fc = 'none'
+            if pointss is target and args.center:
+                points = points - center
             ax.scatter(*points.T[::-1], s=size, color=fc, edgecolor=ec, marker='o')
         ax.set_xticks([])
         ax.set_yticks([])
@@ -225,6 +231,8 @@ def main(args=None):
                              help="The size of markers (for each class)")
     plot_parser.add_argument("--reference", action="store_true",
                              help="Plot the reference in the alignment view")
+    plot_parser.add_argument("--center", action="store_true",
+                             help="Center data points to reference")
     plot_parser.add_argument("--scalebar", type=str, nargs=2,
                              help="Scalebar size and units")
     plot_parser.add_argument("--outfile", type=Path,
