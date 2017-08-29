@@ -89,6 +89,9 @@ def saveXform(f, xform, fmt):
 
 def plot(args):
     import matplotlib
+    from mpl_toolkits.axes_grid.anchored_artists import AnchoredAuxTransformBox
+    from matplotlib.text import Text
+    from matplotlib.text import Line2D
 
     if args.outfile is not None:
         matplotlib.use('Agg')
@@ -119,6 +122,21 @@ def plot(args):
     if args.reference:
         for color, size, points in zip(colors, sizes, map(project, reference)):
             axs[-1].scatter(*points.T[::-1], s=size, color=color, marker='+')
+    if args.scalebar is not None:
+        length, units = args.scalebar
+        length = int(length)
+
+        box = AnchoredAuxTransformBox(axs[-1].transData, loc=4)
+        box.patch.set_alpha(0.8)
+        bar = Line2D([-length/2, length/2], [0.0, 0.0], color='black')
+        box.drawing_area.add_artist(bar)
+        label = Text(
+            0.0, 0.0, "{} {}".format(length, units),
+            horizontalalignment="center", verticalalignment="bottom"
+        )
+        box.drawing_area.add_artist(label)
+        axs[-1].add_artist(box)
+
     titles = ["Reference", "Data", "Transformed"]
     for ax, title in zip(axs, titles):
         ax.set_title(title)
@@ -207,6 +225,8 @@ def main(args=None):
                              help="The size of markers (for each class)")
     plot_parser.add_argument("--reference", action="store_true",
                              help="Plot the reference in the alignment view")
+    plot_parser.add_argument("--scalebar", type=str, nargs=2,
+                             help="Scalebar size and units")
     plot_parser.add_argument("--outfile", type=Path,
                              help="Where to save the plot (omit to display)")
     plot_parser.set_defaults(func=plot)
