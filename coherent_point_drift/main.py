@@ -115,6 +115,7 @@ def plot(args):
             ax.scatter(*points.T[::-1], s=size, color=fc, edgecolor=ec, marker='o')
         ax.set_xticks([])
         ax.set_yticks([])
+        ax.axis('equal')
     if args.reference:
         for color, size, points in zip(colors, sizes, map(project, reference)):
             axs[-1].scatter(*points.T[::-1], s=size, color=color, marker='+')
