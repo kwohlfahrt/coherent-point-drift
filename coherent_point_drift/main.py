@@ -88,7 +88,6 @@ def saveXform(f, xform, fmt):
 
 
 def plot(args):
-    from numpy import delete
     import matplotlib
 
     if args.outfile is not None:
@@ -104,8 +103,7 @@ def plot(args):
 
     xformed = list(map(partial(op.matmul, loadXform(args.transform)), target))
 
-    proj_axes = tuple(filterfalse(partial(op.contains, args.axes), range(ndim)))
-    project = partial(delete, obj=proj_axes, axis=1)
+    project = op.itemgetter((slice(None), list(args.axes)))
 
     colors = list(map("C{}".format, range(10)))
     fig, axs = plt.subplots(1, 3, figsize=args.figsize, sharex=True, sharey=True)
