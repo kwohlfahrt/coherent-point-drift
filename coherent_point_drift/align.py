@@ -1,4 +1,5 @@
 from math import pi
+import operator as op
 
 def tryAlignment(X, Y, w, maxiter, initial_guess):
     from .util import last
@@ -47,17 +48,15 @@ def eStep(X, Y, prior, sigma_squared):
     dist = pairwiseDistanceSquared(X, Y)
     overlap = prior * exp(-dist / (2 * sigma_squared))
 
-    # The original algorithm expects unit variance, so normalize (2πς**2)**D/2 to compensate
-    # No other parts are scale-dependent
     P = overlap / (overlap.sum(axis=1, keepdims=True)
                    + (2 * pi * sigma_squared) ** (D / 2)
-                   * (1 - prior.sum(axis=1, keepdims=True)) / N / std(X) ** D)
+                   * (1 - prior.sum(axis=1, keepdims=True)) / N)
     return P
 
 # X is the reference, Y is the points
 def driftAffine(X, Y, w=0.5):
     from numpy.linalg import inv
-    from numpy import trace, eye, full, asarray
+    from numpy import trace, eye, full, asarray, zeros
     from math import pi
     from .geometry import pairwiseDistanceSquared, AffineXform, std
 
@@ -65,8 +64,11 @@ def driftAffine(X, Y, w=0.5):
     N = len(X)
     M = len(Y)
 
-    B = (std(X) / std(Y)) * eye(D)
-    t = X.mean(axis=0) - (AffineXform(B) @ Y).mean(axis=0)
+    norms = list(map(AffineXform.normalize, [X, Y]))
+    X, Y = map(op.matmul, norms, [X, Y])
+
+    B = eye(D)
+    t = zeros(D)
 
     if isinstance(w, float):
         prior = full((N, M), (1-w)/M, dtype='double')
@@ -91,13 +93,13 @@ def driftAffine(X, Y, w=0.5):
         old_sigma_squared = sigma_squared
         sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T) @ X_hat)
                          - trace(X_hat.T @ P @ Y_hat @ B.T)) / (N_p * D)
-        yield P, AffineXform(B, t)
+        yield P, norms[0].inverse @ AffineXform(B, t) @ norms[1]
         if abs(sigma_squared) < 1e-12 or abs(old_sigma_squared - sigma_squared) < 1e-12:
             break
 
 def driftRigid(X, Y, w=0.5):
     from numpy.linalg import svd, det, norm
-    from numpy import trace, eye, full, asarray
+    from numpy import trace, eye, full, asarray, zeros
     from math import pi
     from .geometry import pairwiseDistanceSquared, RigidXform, std
 
@@ -112,9 +114,12 @@ def driftRigid(X, Y, w=0.5):
     N = len(X)
     M = len(Y)
 
+    norms = list(map(RigidXform.normalize, [X, Y]))
+    X, Y = map(op.matmul, norms, [X, Y])
+
     R = eye(D)
-    s = std(X) / std(Y)
-    t = X.mean(axis=0) - Y.mean(axis=0)
+    s = 1.0
+    t = zeros(D)
 
     if isinstance(w, float):
         if not (0 <= w <= 1):
@@ -147,7 +152,7 @@ def driftRigid(X, Y, w=0.5):
         old_sigma_squared = sigma_squared
         sigma_squared = (trace((X_hat.T * P.sum(axis=1, keepdims=True).T) @ X_hat)
                          - s * trace(A.T @ R)) / (N_p * D)
-        yield P, RigidXform(R, t, s)
+        yield P, norms[0].inverse @ RigidXform(R, t, s) @ norms[1]
         if abs(sigma_squared) < 1e-12 or abs(old_sigma_squared - sigma_squared) < 1e-12:
             # Sigma squared == 0 on positive fit, but occasionally ~= -1e17
             break

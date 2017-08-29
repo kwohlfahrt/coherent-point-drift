@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name="coherent_point_drift",
-      version="0.3.3",
+      version="0.3.4",
       description="A library for aliging point clouds",
       packages=['coherent_point_drift'],
       requires=['numpy (>=1.10)'],
