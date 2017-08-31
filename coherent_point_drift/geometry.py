@@ -3,9 +3,7 @@ from functools import partial
 
 def RMSD(X, Y, P):
     from numpy import sqrt
-
-    P = P / P.sum(axis=0, keepdims=True)
-    return sqrt((pairwiseDistanceSquared(X, Y) * P).mean()) / std(X)
+    return sqrt((pairwiseDistanceSquared(X, Y) * P).mean())
 
 def pairwiseDistanceSquared(X, Y):
     # R[i, j] = distance(X[i], Y[j]) ** 2
