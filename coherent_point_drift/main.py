@@ -178,7 +178,7 @@ def align(args):
     if args.mode == "rigid":
         if args.scope == "global":
             P, xform = globalAlignment(
-                reference, target, prior, mirror=False, maxiter=args.niter, processes=args.j
+                reference, target, prior, mirror=True, maxiter=args.niter, processes=args.j
             )
         else:
             P, xform = last(islice(driftRigid(reference, target, prior), args.niter))

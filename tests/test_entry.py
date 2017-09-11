@@ -11,7 +11,8 @@ import numpy as np
 cmd = ["python3", "-m" "coherent_point_drift.main"]
 
 def test_align():
-    args = split("align tests/fixtures/ref.txt tests/fixtures/deg.txt --format pickle")
+    args = split("align tests/fixtures/ref.txt tests/fixtures/deg.txt "
+                 "--format pickle --scope global")
     expected = loadXform(Path("tests/fixtures/xform.pickle"))
 
     r = run(cmd + args, stdout=PIPE, universal_newlines=False)
@@ -33,7 +34,8 @@ def test_xform_inverse(tmpdir):
     deg.write_binary(r.stdout)
 
     # Generate alignment
-    args = split("align tests/fixtures/ref.txt '{}' --format pickle".format(str(deg)))
+    args = split("align tests/fixtures/ref.txt '{}' "
+                 "--format pickle --scope global".format(str(deg)))
     r = run(cmd + args, stdout=PIPE, universal_newlines=False)
     assert not r.returncode
     xform = tmpdir.join("xform.pickle")
@@ -66,7 +68,7 @@ def test_align_multiple():
     args = split(
         "align tests/fixtures/ref.txt tests/fixtures/deg.txt "
         "tests/fixtures/ref.txt tests/fixtures/deg.txt "
-        "-w {w} --format pickle".format(w=2/3)
+        "-w {w} --format pickle --scope global".format(w=2/3)
     )
     expected = loadXform(Path("tests/fixtures/xform.pickle"))
 
