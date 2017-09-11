@@ -117,17 +117,24 @@ def plot(args):
     for ax, pointss in zip(axs, [reference, target, xformed]):
         for color, size, points in zip(colors, sizes, map(project, pointss)):
             fc = ec = color
+            label = None
             if pointss is xformed and args.reference:
                 fc = 'none'
+                label = 'aligned'
             if pointss is target and args.center:
                 points = points - center
-            ax.scatter(*points.T[::-1], s=size, color=fc, edgecolor=ec, marker='o')
+            ax.scatter(
+                *points.T[::-1], s=size, color=fc, edgecolor=ec, marker='o', label=label
+            )
         ax.set_xticks([])
         ax.set_yticks([])
         ax.axis('equal')
     if args.reference:
         for color, size, points in zip(colors, sizes, map(project, reference)):
-            axs[-1].scatter(*points.T[::-1], s=size, color=color, marker='+')
+            axs[-1].scatter(
+                *points.T[::-1], s=size, color=color, marker='+', label='reference'
+            )
+        axs[-1].legend(loc=1)
     if args.scalebar is not None:
         length, units = args.scalebar
         length = int(length)
