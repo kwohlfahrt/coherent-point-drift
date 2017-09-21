@@ -20,18 +20,11 @@ def align(X, Y, mirror=False):
 
     U, D, VT = la.svd(sigma)
     S = np.eye(len(D))
-    if la.det(sigma) < 0:
+    if not mirror and la.det(sigma) < 0:
         S[-1, -1] = -1
 
     R = U @ S @ VT
     s = 1 / ss_y * np.trace(np.diag(D) @ S)
     t = mu_x - s * R @ mu_y
     xform = RigidXform(R, t, s)
-    if mirror:
-        reflection = np.eye(Y.shape[1])
-        reflection[-1, -1] = -1
-        reflection = RigidXform(reflection)
-
-        mirrored_xform = reflection @ align(X, reflection @ Y, mirror=False)
-        xform = min(xform, mirrored_xform, key=lambda x: score(X, x @ Y))
     return xform
