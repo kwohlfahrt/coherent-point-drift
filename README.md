@@ -24,14 +24,10 @@ from [PyPI][pypi].
 
 # Usage
 
-## Script
-
-The main script `align.py`, performs alignment searches and can also plot the
-result. If using `setup.py`, it will be installed as the `cpd` exectutable.
 Detailed instructions and lists of supported formats are available with the
 `--help` option, but general use is as follows:
 
-    align.py align reference.csv points.csv
+    cpd align reference.csv points.csv
     
 This will produce a transform to align the points in `points.csv` to the points
 in `reference.csv` (other input formats are supported).
@@ -39,15 +35,15 @@ in `reference.csv` (other input formats are supported).
 To save the resulting transform (e.g. for plotting), specify the `--format`
 argument. Then, redirect the output into your target file:
 
-    align.py align reference.csv points.csv --format pickle > xform.pickle
+    cpd align reference.csv points.csv --format pickle > xform.pickle
 
 The alignment can be visualized with the `plot` command:
 
-    align.py plot reference.csv points.csv xform.pickle
+    cpd plot reference.csv points.csv xform.pickle
     
 Or, it can be applied to an arbitrary set of points with the `xform` command:
 
-    align.py xform points.csv xform --format txt
+    cpd xform points.csv xform --format txt
     
 Note `--format` specifies the format of the output, the input format is guessed
 from the file extension.
@@ -56,9 +52,6 @@ from the file extension.
 
 Some sample points and a transform can be found in the `tests/fixtures`
 directory, as `ref.pickle`, `deg.pickle` and `xform.pickle` respectively.
-
-Other examples can be found in the `figures` directory, but these are not
-actively maintained.
 
 [setuptools]: https://docs.python.org/3.3/install/#the-new-standard-distutils
 [Python]: https://python.org
