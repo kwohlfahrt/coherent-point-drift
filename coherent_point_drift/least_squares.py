@@ -1,7 +1,9 @@
 from .geometry import RigidXform
 
+
 def score(X, Y):
     return ((X - Y) ** 2).sum()
+
 
 def align(X, Y, mirror=False):
     import numpy as np
@@ -13,7 +15,6 @@ def align(X, Y, mirror=False):
     X_hat = X - mu_x
     Y_hat = Y - mu_y
 
-    ss_x = (la.norm(X_hat, axis=1) ** 2).mean()
     ss_y = (la.norm(Y_hat, axis=1) ** 2).mean()
 
     sigma = X_hat.T @ Y_hat / len(X)

@@ -1,7 +1,7 @@
-import pytest
 import numpy as np
 
 from coherent_point_drift.main import *
+
 
 def test_print_points(tmpdir):
     points = np.asarray([

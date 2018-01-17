@@ -1,13 +1,15 @@
-from numpy import array
 from functools import partial
+
 
 def RMSD(X, Y, P):
     from numpy import sqrt, average
     return sqrt(average(pairwiseDistanceSquared(X, Y), weights=P))
 
+
 def pairwiseDistanceSquared(X, Y):
     # R[i, j] = distance(X[i], Y[j]) ** 2
     return ((X[:, None, :] - Y[None, :, :]) ** 2).sum(axis=2)
+
 
 def rotationMatrix(*angles):
     from numpy import eye, array
@@ -30,6 +32,7 @@ def rotationMatrix(*angles):
                                   .format(len(angles)))
     return R
 
+
 def spacedRotations(D, N):
     from math import pi, sin, cos, sqrt
     from itertools import product as cartesian, repeat
@@ -51,11 +54,10 @@ def spacedRotations(D, N):
 # For spaced points on a sphere, see Saff & Kuijlaars,
 # The Mathematical Intelligencer Winter 1997, Volume 19, Issue 1, pp 5-11
 
+
 def randomRotations(D, rng=None):
     from math import pi, sin, cos, sqrt
     from numpy.random import RandomState
-    from itertools import product as cartesian, repeat
-    from .util import frange
 
     if not isinstance(rng, RandomState):
         rng = RandomState(rng)
@@ -77,10 +79,12 @@ def randomRotations(D, rng=None):
         raise NotImplementedError("Only defined for D in [2..3], not {}"
                                   .format(D))
 
+
 def std(x):
     from numpy import sqrt
 
     return sqrt(((x - x.mean(axis=0)) ** 2).sum(axis=1).mean())
+
 
 class RigidXform:
     def __init__(self, R=None, t=None, s=None):
@@ -150,6 +154,7 @@ class RigidXform:
         t = -X.mean(axis=0) * s
         return cls(t=t, s=s)
 
+
 class AffineXform:
     def __init__(self, B=None, t=None):
         self.B = B
@@ -197,7 +202,6 @@ class AffineXform:
             ndim = other.shape[1]
             B, t = self.matrices(ndim)
             return (B.dot(other.T)).T + t
-
 
     def __eq__(self, other):
         return self.B == other.B and self.t == other.t

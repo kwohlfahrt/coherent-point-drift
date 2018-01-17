@@ -1,12 +1,14 @@
 from math import pi
 import operator as op
 
+
 def tryAlignment(X, Y, w, maxiter, initial_guess):
     from .util import last
     from itertools import islice
 
     P, xform = last(islice(driftRigid(X, initial_guess @ Y, w), maxiter))
     return P, xform @ initial_guess
+
 
 def globalAlignment(X, Y, w=0.5, nsteps=7, maxiter=200, mirror=False, processes=None):
     from .geometry import spacedRotations, RMSD, RigidXform, rotationMatrix
@@ -37,13 +39,13 @@ def globalAlignment(X, Y, w=0.5, nsteps=7, maxiter=200, mirror=False, processes=
         solution = min(xforms, key=lambda xform: RMSD(X, xform[1] @ Y, xform[0]))
     return solution
 
+
 def eStep(X, Y, prior, sigma_squared):
     from numpy import exp
-    from .geometry import pairwiseDistanceSquared, std
+    from .geometry import pairwiseDistanceSquared
 
     D = X.shape[1]
     N = len(X)
-    M = len(Y)
 
     dist = pairwiseDistanceSquared(X, Y)
     overlap = prior * exp(-dist / (2 * sigma_squared))
@@ -53,12 +55,12 @@ def eStep(X, Y, prior, sigma_squared):
                    * (1 - prior.sum(axis=1, keepdims=True)) / N)
     return P
 
+
 # X is the reference, Y is the points
 def driftAffine(X, Y, w=0.5):
     from numpy.linalg import inv
     from numpy import trace, eye, full, asarray, zeros
-    from math import pi
-    from .geometry import pairwiseDistanceSquared, AffineXform, std
+    from .geometry import pairwiseDistanceSquared, AffineXform
 
     D = X.shape[1]
     N = len(X)
@@ -87,7 +89,7 @@ def driftAffine(X, Y, w=0.5):
         X_hat = X - mu_x.T
         Y_hat = Y - mu_y.T
 
-        #This part is different to driftRigid
+        # This part is different to driftRigid
         B = (X_hat.T @ P @ Y_hat) @ inv((Y_hat.T * P.sum(axis=0, keepdims=True)) @ Y_hat)
         t = mu_x - B @ mu_y
         old_sigma_squared = sigma_squared
@@ -97,11 +99,11 @@ def driftAffine(X, Y, w=0.5):
         if abs(sigma_squared) < 1e-12 or abs(old_sigma_squared - sigma_squared) < 1e-12:
             break
 
+
 def driftRigid(X, Y, w=0.5):
-    from numpy.linalg import svd, det, norm
+    from numpy.linalg import svd, det
     from numpy import trace, eye, full, asarray, zeros
-    from math import pi
-    from .geometry import pairwiseDistanceSquared, RigidXform, std
+    from .geometry import pairwiseDistanceSquared, RigidXform
 
     if not (X.ndim == Y.ndim == 2):
         raise ValueError("Expecting 2D input data, got {}D and {}D"
@@ -123,8 +125,7 @@ def driftRigid(X, Y, w=0.5):
 
     if isinstance(w, float):
         if not (0 <= w <= 1):
-            raise ValueError("w must be in the range [0..1], got {}"
-                            .format(w))
+            raise ValueError("w must be in the range [0..1], got {}".format(w))
         prior = full((N, M), (1-w)/M, dtype='double')
     else:
         prior = asarray(w)

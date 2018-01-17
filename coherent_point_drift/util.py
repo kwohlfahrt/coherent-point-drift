@@ -16,6 +16,8 @@ class frange:
         for i in range(len(self)):
             yield self[i]
 
+
 def last(seq):
-    from functools import reduce, partial
+    from functools import reduce
+
     return reduce(lambda acc, x: x, seq)

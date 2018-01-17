@@ -4,6 +4,7 @@ from coherent_point_drift.geometry import RigidXform, randomRotations, rotationM
 from coherent_point_drift.util import last
 from itertools import islice
 
+
 def test_least_squares():
     rng = np.random.RandomState(4)
 
@@ -47,7 +48,6 @@ def test_cpd_prior():
 
 
 def test_mirror():
-    from coherent_point_drift.align import driftRigid
     # L-shape
     X = np.array([[1, 0], [0, 0], [0, 1], [0, 2], [0, 3]])
     Y = X * np.array([[-1, 1]])

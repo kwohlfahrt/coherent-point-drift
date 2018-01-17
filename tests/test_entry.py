@@ -1,14 +1,14 @@
-from pickle import load, loads
+from pickle import loads
 from subprocess import run, PIPE
 from numpy.testing import assert_almost_equal
 from coherent_point_drift.main import loadPoints, loadXform
 from shlex import split
 from pathlib import Path
 
-import pytest
 import numpy as np
 
 cmd = ["python3", "-m" "coherent_point_drift.main"]
+
 
 def test_align():
     args = split("align tests/fixtures/ref.txt tests/fixtures/deg.txt "
@@ -22,6 +22,7 @@ def test_align():
     np.testing.assert_almost_equal(result.R, expected.R)
     np.testing.assert_almost_equal(result.t, expected.t)
     np.testing.assert_almost_equal(result.s, expected.s)
+
 
 def test_xform_inverse(tmpdir):
     expected = loadPoints(Path("tests/fixtures/ref.txt"))
@@ -50,8 +51,6 @@ def test_xform_inverse(tmpdir):
 
 
 def test_print(tmpdir):
-    expected = loadPoints(Path("tests/fixtures/ref.txt"))
-
     # Generate degraded points (without noise)
     args = split("xform tests/fixtures/ref.txt tests/fixtures/xform.pickle --format txt")
     r = run(cmd + args, stdout=PIPE, universal_newlines=False)
@@ -63,6 +62,7 @@ def test_print(tmpdir):
     args = split("align tests/fixtures/ref.txt '{}' --format print".format(str(deg)))
     r = run(cmd + args, stdout=PIPE, universal_newlines=False)
     assert not r.returncode
+
 
 def test_align_multiple():
     args = split(
@@ -80,6 +80,7 @@ def test_align_multiple():
     np.testing.assert_almost_equal(result.t, expected.t)
     np.testing.assert_almost_equal(result.s, expected.s)
 
+
 def test_align_multiple_w():
     args = split(
         "align tests/fixtures/ref.txt tests/fixtures/deg.txt "
@@ -90,6 +91,7 @@ def test_align_multiple_w():
     r = run(cmd + args, stdout=PIPE, universal_newlines=False)
     assert not r.returncode
 
+
 def test_plot_multiple(tmpdir):
     args = split(
         "plot tests/fixtures/ref.txt tests/fixtures/deg.txt "
@@ -98,6 +100,7 @@ def test_plot_multiple(tmpdir):
     )
     r = run(cmd + args, stdout=PIPE, universal_newlines=False)
     assert not r.returncode
+
 
 def test_global_multiple():
     args = split(
@@ -114,6 +117,7 @@ def test_global_multiple():
     np.testing.assert_almost_equal(result.R, expected.R)
     np.testing.assert_almost_equal(result.t, expected.t)
     np.testing.assert_almost_equal(result.s, expected.s)
+
 
 def test_plot_sizes(tmpdir):
     for sizes in ["1.0", "0.5 1.0"]:

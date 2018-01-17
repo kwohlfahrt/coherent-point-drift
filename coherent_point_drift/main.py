@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
 from .align import driftRigid, driftAffine, globalAlignment
-from .geometry import RigidXform, AffineXform, RMSD
+from .geometry import RigidXform, AffineXform
 from .util import last
-from itertools import islice, filterfalse
+from itertools import islice
 import operator as op
 from functools import partial
 from pickle import load, dump, HIGHEST_PROTOCOL
-dump = partial(dump, protocol=HIGHEST_PROTOCOL)
 from pathlib import Path
 from sys import stdout
 import numpy as np
 
+dump = partial(dump, protocol=HIGHEST_PROTOCOL)
 
 try:
     from scipy.io import savemat
@@ -101,7 +101,6 @@ def plot(args):
         raise ValueError("Must provide at least 2 point sets")
     points = list(map(loadPoints, args.points))
     reference, target = points[0::2], points[1::2]
-    ndim = points[0].shape[1]
     sizes = np.broadcast_to(args.sizes, len(reference))
 
     xformed = list(map(partial(op.matmul, loadXform(args.transform)), target))
@@ -223,7 +222,7 @@ def main(args=None):
     if savemat is not None:
         output_options.add("mat")
     align_parser.add_argument("--format", type=str, choices=output_options,
-                                default="print", help="Output format")
+                              default="print", help="Output format")
     align_parser.set_defaults(func=align)
 
     plot_parser = subparsers.add_parser("plot")

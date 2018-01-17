@@ -1,13 +1,11 @@
 from coherent_point_drift.align import *
 from coherent_point_drift.util import last
-from coherent_point_drift.geometry import RMSD
 from coherent_point_drift.main import loadPoints, loadXform
-from pickle import load
 from pathlib import Path
 
 import numpy as np
-import pytest
 from itertools import islice
+
 
 def test_global():
     X = loadPoints(Path("tests/fixtures/ref.txt"))
@@ -20,6 +18,7 @@ def test_global():
     np.testing.assert_almost_equal(xform.t, expected.t)
     np.testing.assert_almost_equal(xform.s, expected.s)
 
+
 def test_perfect_rigid():
     X = loadPoints(Path("tests/fixtures/ref.txt"))
     P, xform = last(islice(driftRigid(X, X), 100))
@@ -27,6 +26,7 @@ def test_perfect_rigid():
     np.testing.assert_almost_equal(xform.R, np.eye(2))
     np.testing.assert_almost_equal(xform.t, np.zeros(2))
     np.testing.assert_almost_equal(xform.s, 1)
+
 
 def test_affine():
     X = loadPoints(Path("tests/fixtures/ref.txt"))
@@ -37,6 +37,7 @@ def test_affine():
 
     np.testing.assert_almost_equal(xform.B, expected.B)
     np.testing.assert_almost_equal(xform.t, expected.t)
+
 
 def test_perfect_affine():
     X = loadPoints(Path("tests/fixtures/ref.txt"))

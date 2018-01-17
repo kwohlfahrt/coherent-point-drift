@@ -1,5 +1,6 @@
 from math import sqrt, cos, sin, acos, pi
 
+
 class Quaternion:
     def __init__(self, s, i, j, k):
         self.s = s
