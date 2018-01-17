@@ -1,5 +1,8 @@
 # Coherent Point Drift
 
+[![Build Status](https://travis-ci.org/kwohlfahrt/coherent-point-drift.svg?branch=master)](https://travis-ci.org/kwohlfahrt/coherent-point-drift)
+[![codecov](https://codecov.io/gh/kwohlfahrt/coherent-point-drift/branch/master/graph/badge.svg)](https://codecov.io/gh/kwohlfahrt/coherent-point-drift)
+
 A python implementation of rigid and affine alignment using the
 [coherent point drift][cpd] algorithm. Includes brute-force search for rigid
 alignment in global rotation space.
