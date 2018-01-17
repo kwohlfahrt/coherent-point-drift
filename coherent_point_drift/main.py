@@ -222,8 +222,8 @@ def main(args=None):
     output_options = {"pickle", "print"}
     if savemat is not None:
         output_options.add("mat")
-        align_parser.add_argument("--format", type=str, choices=output_options,
-                                  default="print", help="Output format")
+    align_parser.add_argument("--format", type=str, choices=output_options,
+                                default="print", help="Output format")
     align_parser.set_defaults(func=align)
 
     plot_parser = subparsers.add_parser("plot")
