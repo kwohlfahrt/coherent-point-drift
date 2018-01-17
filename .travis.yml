@@ -12,6 +12,7 @@ matrix:
       after_success: []
 install:
   - pip install pytest-cov codecov
+  - pip install matplotlib
   - pip install .
 script:
   - pytest --cov=coherent_point_drift
