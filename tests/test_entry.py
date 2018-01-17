@@ -4,8 +4,13 @@ from numpy.testing import assert_almost_equal
 from coherent_point_drift.main import loadPoints, loadXform
 from shlex import split
 from pathlib import Path
+import importlib
 
 import numpy as np
+import pytest
+
+HAVE_MPL = importlib.util.find_spec("matplotlib") is not None
+
 
 cmd = ["python3", "-m" "coherent_point_drift.main"]
 
@@ -92,6 +97,7 @@ def test_align_multiple_w():
     assert not r.returncode
 
 
+@pytest.mark.skipif(not HAVE_MPL, reason="Need matplotlib")
 def test_plot_multiple(tmpdir):
     args = split(
         "plot tests/fixtures/ref.txt tests/fixtures/deg.txt "
@@ -119,6 +125,7 @@ def test_global_multiple():
     np.testing.assert_almost_equal(result.s, expected.s)
 
 
+@pytest.mark.skipif(not HAVE_MPL, reason="Need matplotlib")
 def test_plot_sizes(tmpdir):
     for sizes in ["1.0", "0.5 1.0"]:
         args = split(
